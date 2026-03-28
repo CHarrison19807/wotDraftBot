@@ -10,20 +10,28 @@
 		"lint": "biome lint src/",
 		"format": "biome format --write src/",
 		"typecheck": "tsc --noEmit",
-		"deploy": "bun src/deploy.ts"
+		"deploy": "bun src/registerCommands.ts",
+		"db:push": "prisma db push",
+		"db:migrate": "prisma migrate dev",
+		"db:studio": "prisma studio"
 	},
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
 	"packageManager": "pnpm@10.33.0",
 	"dependencies": {
+		"@prisma/adapter-pg": "7.6.0",
+		"@prisma/client": "7.6.0",
 		"discord.js": "14.25.1",
-		"dotenv": "17.3.1"
+		"dotenv": "17.3.1",
+		"pg": "8.20.0",
+		"prisma": "7.6.0"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.4.9",
 		"@tsconfig/bun": "1.0.10",
 		"@types/node": "25.5.0",
+		"@types/pg": "8.20.0",
 		"typescript": "5.9.3"
 	}
 }

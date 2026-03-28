@@ -1,0 +1,80 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum WorldOfTanksMapName {
+  Cliff
+  GhostTown
+  Himmelsdorf
+  Murovanka
+  Pilsen
+  SandRiver
+  Tundra
+  Ruinberg
+  Ensk
+}
+
+enum PickBanStepAction {
+  MapBan
+  MapPick
+  SidePick
+}
+
+enum MapSide {
+  North
+  South
+  East
+  West
+}
+
+enum ActingTeam {
+  TeamA
+  TeamB
+}
+
+enum PickBanFormat {
+  Bo5
+  Bo7
+  Bo9
+  Bo11
+}
+
+enum PickBanStatus {
+  Active
+  Cancelled
+  Complete
+}
+
+model PickBanState {
+  id               String        @id @default(cuid())
+  channelId        String        @unique
+  format           PickBanFormat
+  teamACaptainId   String
+  teamBCaptainId   String
+  availableMaps    WorldOfTanksMapName[]
+  currentStepIndex Int           @default(0)
+  status           PickBanStatus @default(Active)
+  messageId        String
+  actions          PickBanAction[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+model PickBanAction {
+  id         Int               @id @default(autoincrement())
+  state      PickBanState      @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  stateId    String
+  action     PickBanStepAction
+  actingTeam ActingTeam
+  mapName    WorldOfTanksMapName?
+  side       MapSide?
+  order      Int
+}
