@@ -1,0 +1,9 @@
+import type { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
+import * as ping from "./ping";
+
+export interface Command {
+  data: SlashCommandBuilder;
+  execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
+}
+
+export const commands = [ping];
