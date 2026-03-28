@@ -1,5 +1,5 @@
+import type { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
-import type { PickBanFormat, Prisma, WorldOfTanksMapName } from "../generated/prisma/client.js";
 
 export async function createPickBanState(data: Prisma.PickBanStateUncheckedCreateInput) {
   return prisma.pickBanState.create({ data });

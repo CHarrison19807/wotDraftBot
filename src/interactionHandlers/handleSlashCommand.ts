@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, MessageFlags } from "discord.js";
+import { type ChatInputCommandInteraction, MessageFlags } from "discord.js";
 import { commands } from "../commands/index";
 
 const commandMap = new Map(commands.map((command) => [command.data.name, command]));

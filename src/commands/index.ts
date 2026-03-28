@@ -1,4 +1,5 @@
 import type { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
+import * as pickban from "./pickban";
 import * as ping from "./ping";
 import * as pickban from "./pickban";
 

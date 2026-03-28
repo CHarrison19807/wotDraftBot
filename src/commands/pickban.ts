@@ -7,8 +7,8 @@ import {
   SlashCommandBuilder,
 } from "discord.js";
 import { MAP_POOL, PICK_BAN_CONFIGS } from "../constants";
-import { PickBanFormat } from "../generated/prisma/client";
 import { createPickBanState } from "../db/pickban";
+import { PickBanFormat } from "../generated/prisma/client";
 
 export const data = new SlashCommandBuilder()
   .setName("pickban")
@@ -52,10 +52,13 @@ export const execute = async (interaction: ChatInputCommandInteraction) => {
   const captainB = interaction.options.getUser("captain_b", true);
   const categoryOption = interaction.options.getChannel("category");
 
-    if (captainA.id === captainB.id) {
-      await interaction.reply({ content: "Team A and Team B captains must be different users.", flags: MessageFlags.Ephemeral });
-      return;
-    }
+  if (captainA.id === captainB.id) {
+    await interaction.reply({
+      content: "Team A and Team B captains must be different users.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
 
   await interaction.deferReply();
 
@@ -114,12 +117,13 @@ export const execute = async (interaction: ChatInputCommandInteraction) => {
     ],
   });
 
-  const steps = PICK_BAN_CONFIGS[format];
-  const firstStep = steps[0];
+  const firstStep = PICK_BAN_CONFIGS[format]?.[0];
 
   if (!firstStep) {
     await channel.delete();
-    await interaction.editReply(`Invalid format configuration..\nFormat **${format}** does not have any pick/ban steps configured.`);
+    await interaction.editReply(
+      `Invalid format configuration..\nFormat **${format}** does not have any pick/ban steps configured.`,
+    );
     return;
   }
 

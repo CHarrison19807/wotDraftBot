@@ -1,7 +1,7 @@
 import {
-  type PickBanFormat,
   ActingTeam,
   MapSide,
+  type PickBanFormat,
   PickBanStepAction,
   WorldOfTanksMapName,
 } from "./generated/prisma/client";
