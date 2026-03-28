@@ -1,4 +1,4 @@
-import type { ChatInputCommandInteraction } from "discord.js";
+import { ChatInputCommandInteraction, MessageFlags } from "discord.js";
 import { commands } from "../commands/index";
 
 const commandMap = new Map(commands.map((command) => [command.data.name, command]));
@@ -11,7 +11,7 @@ export async function handleSlashCommand(interaction: ChatInputCommandInteractio
     await command.execute(interaction);
   } catch (error) {
     console.error(`Error executing ${interaction.commandName}:`, error);
-    const reply = { content: "There was an error executing this command.", ephemeral: true };
+    const reply = { content: "There was an error executing this command.", MessageFlags: MessageFlags.Ephemeral };
     if (interaction.replied || interaction.deferred) {
       await interaction.followUp(reply);
     } else {
