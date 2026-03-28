@@ -1,4 +1,10 @@
-import { ActingTeam, MapSide, PickBanStepAction, PickBanFormat, WorldOfTanksMapName } from "./generated/prisma/client";
+import {
+  ActingTeam,
+  MapSide,
+  type PickBanFormat,
+  PickBanStepAction,
+  WorldOfTanksMapName,
+} from "./generated/prisma/client";
 
 const TeamA = ActingTeam.TeamA;
 const TeamB = ActingTeam.TeamB;

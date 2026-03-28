@@ -1,4 +1,5 @@
 import type { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
+import * as pickban from "./pickban";
 import * as ping from "./ping";
 
 export interface Command {
@@ -6,4 +7,4 @@ export interface Command {
   execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
 }
 
-export const commands = [ping];
+export const commands = [ping, pickban];
