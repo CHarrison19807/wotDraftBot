@@ -11,11 +11,20 @@ export async function handleSlashCommand(interaction: ChatInputCommandInteractio
     await command.execute(interaction);
   } catch (error) {
     console.error(`Error executing ${interaction.commandName}:`, error);
-    const reply = { content: "There was an error executing this command.", MessageFlags: MessageFlags.Ephemeral };
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp(reply);
-    } else {
-      await interaction.reply(reply);
+    try {
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({
+          content: "There was an error executing this command.",
+          flags: MessageFlags.Ephemeral,
+        });
+      } else {
+        await interaction.reply({
+          content: "There was an error executing this command.",
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+    } catch (replyError) {
+      console.error("Failed to send error reply:", replyError);
     }
   }
 }

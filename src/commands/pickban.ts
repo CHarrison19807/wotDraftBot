@@ -6,8 +6,10 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from "discord.js";
-import { MAP_POOL, PICK_BAN_CONFIGS } from "../constants";
-import { createPickBanState } from "../db/pickban";
+import { buildPickBanButtons } from "../components/buildPickBanButtons";
+import { buildPickBanEmbed } from "../components/buildPickBanEmbed";
+import { fallBackCategoryName, MAP_POOL, PICK_BAN_CONFIGS } from "../constants";
+import { createPickBanState, getPickBanState } from "../db/pickBanState";
 import { PickBanFormat } from "../generated/prisma/client";
 
 export const data = new SlashCommandBuilder()
@@ -62,9 +64,6 @@ export const execute = async (interaction: ChatInputCommandInteraction) => {
 
   await interaction.deferReply();
 
-  const fallBackCategoryName = "Pick-Ban-Sessions";
-  const sessionId = crypto.randomUUID().slice(0, 8);
-
   let category =
     categoryOption ||
     guild.channels.cache.find((c) => c.type === ChannelType.GuildCategory && c.name === fallBackCategoryName);
@@ -77,7 +76,7 @@ export const execute = async (interaction: ChatInputCommandInteraction) => {
   }
 
   const channel = await guild.channels.create({
-    name: `pickban-${format.toLowerCase()}-${sessionId}`,
+    name: `pickban-${format.toLowerCase()}-${Date.now()}`,
     type: ChannelType.GuildText,
     parent: category.id,
     permissionOverwrites: [
@@ -117,7 +116,8 @@ export const execute = async (interaction: ChatInputCommandInteraction) => {
     ],
   });
 
-  const firstStep = PICK_BAN_CONFIGS[format]?.[0];
+  const channelId = channel.id;
+  const firstStep = PICK_BAN_CONFIGS[format][0];
 
   if (!firstStep) {
     await channel.delete();
@@ -128,17 +128,32 @@ export const execute = async (interaction: ChatInputCommandInteraction) => {
   }
 
   const message = await channel.send({
-    content: `**${format}** pick/ban\nTeam A Captain: <@${captainA.id}>\nTeam B Captain: <@${captainB.id}>\n\n<@${firstStep.actingTeam === "TeamA" ? captainA.id : captainB.id}> — **${firstStep.action}** a map.`,
+    content: "Pick/Ban session initializing ...",
   });
 
   await createPickBanState({
-    id: sessionId,
-    channelId: channel.id,
+    id: channelId,
     format,
     teamACaptainId: captainA.id,
     teamBCaptainId: captainB.id,
     availableMaps: MAP_POOL.map((m) => m.name),
     messageId: message.id,
+  });
+
+  const newState = await getPickBanState(channelId);
+  if (!newState) {
+    await channel.delete();
+    await interaction.editReply("Failed to create pick/ban session.");
+    return;
+  }
+
+  const messageComponents = buildPickBanButtons(newState);
+  const messageEmbed = buildPickBanEmbed(newState);
+
+  await message.edit({
+    embeds: [messageEmbed],
+    components: messageComponents,
+    content: null,
   });
 
   await interaction.editReply(

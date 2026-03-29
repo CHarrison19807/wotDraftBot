@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { Client, Events, GatewayIntentBits } from "discord.js";
+import { handleButtonInteraction } from "./interactionHandlers/handleButtonInteraction";
 import { handleSlashCommand } from "./interactionHandlers/handleSlashCommand";
 
 const client = new Client({
@@ -12,6 +13,7 @@ client.once(Events.ClientReady, (readyClient) => {
 
 client.on(Events.InteractionCreate, (interaction) => {
   if (interaction.isChatInputCommand()) handleSlashCommand(interaction);
+  if (interaction.isButton()) handleButtonInteraction(interaction);
 });
 
 client.login(process.env.DISCORD_TOKEN);
