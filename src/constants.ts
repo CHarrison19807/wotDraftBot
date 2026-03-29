@@ -16,6 +16,8 @@ const South = MapSide.South;
 const East = MapSide.East;
 const West = MapSide.West;
 
+export const fallBackCategoryName = "Pick-Ban-Sessions";
+
 export interface WorldOfTanksMap {
   name: WorldOfTanksMapName;
   sideOptions: MapSide[];
