@@ -40,12 +40,61 @@ export const data = new SlashCommandBuilder()
           .addChannelTypes(ChannelType.GuildCategory)
           .setRequired(false),
       ),
+  )
+  .addSubcommand((sub) =>
+    sub
+      .setName("cleanup")
+      .setDescription("Delete all pick/ban channels in the category")
+      .addStringOption((opt) =>
+        opt
+          .setName("filter")
+          .setDescription("Only delete channels whose name contains this substring")
+          .setRequired(false),
+      )
+      .addChannelOption((opt) =>
+        opt
+          .setName("category")
+          .setDescription("Category to clean up (defaults to Pick-Ban-Sessions)")
+          .addChannelTypes(ChannelType.GuildCategory)
+          .setRequired(false),
+      ),
   );
 
 export const execute = async (interaction: ChatInputCommandInteraction) => {
   const guild = interaction.guild;
   if (!guild) {
     await interaction.reply({ content: "This command can only be used in a server.", flags: MessageFlags.Ephemeral });
+    return;
+  }
+
+  const subcommand = interaction.options.getSubcommand();
+
+  if (subcommand === "cleanup") {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    const categoryOption = interaction.options.getChannel("category");
+
+    const category =
+      categoryOption ||
+      guild.channels.cache.find((c) => c.type === ChannelType.GuildCategory && c.name === fallBackCategoryName);
+
+    if (!category) {
+      await interaction.editReply(`No category found named **${fallBackCategoryName}**.`);
+      return;
+    }
+
+    const filter = interaction.options.getString("filter");
+
+    const channels = guild.channels.cache.filter(
+      (c) =>
+        c.type === ChannelType.GuildText &&
+        "parentId" in c &&
+        c.parentId === category.id &&
+        (!filter || c.name.includes(filter)),
+    );
+
+    await Promise.all(channels.map((c) => c.delete()));
+    await interaction.editReply(`Deleted ${channels.size} channel${channels.size === 1 ? "" : "s"}.`);
     return;
   }
 
