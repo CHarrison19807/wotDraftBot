@@ -54,12 +54,12 @@ enum PickBanStatus {
 }
 
 model PickBanState {
-  id               String        @id @default(cuid())
-  channelId        String        @unique
+  id               String        @id @unique
   format           PickBanFormat
   teamACaptainId   String
   teamBCaptainId   String
   availableMaps    WorldOfTanksMapName[]
+  deciderMap       WorldOfTanksMapName?
   currentStepIndex Int           @default(0)
   status           PickBanStatus @default(Active)
   messageId        String
@@ -76,5 +76,4 @@ model PickBanAction {
   actingTeam ActingTeam
   mapName    WorldOfTanksMapName?
   side       MapSide?
-  order      Int
 }

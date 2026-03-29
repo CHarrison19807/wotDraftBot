@@ -5,9 +5,9 @@ export async function createPickBanState(data: Prisma.PickBanStateUncheckedCreat
   return prisma.pickBanState.create({ data });
 }
 
-export async function getPickBanState(channelId: string) {
+export async function getPickBanState(id: string) {
   return prisma.pickBanState.findUnique({
-    where: { channelId },
-    include: { actions: { orderBy: { order: "asc" } } },
+    where: { id },
+    include: { actions: { orderBy: { id: "asc" } } },
   });
 }
