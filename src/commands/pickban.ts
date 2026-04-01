@@ -9,8 +9,8 @@ import {
 import { buildPickBanButtons } from "../components/buildPickBanButtons";
 import { buildPickBanEmbed } from "../components/buildPickBanEmbed";
 import { fallBackCategoryName, MAP_POOL, PICK_BAN_CONFIGS } from "../constants";
-import { createPickBanState, getPickBanState } from "../db/pickBanState";
-import { PickBanFormat } from "../generated/prisma/client";
+import { cancelPickBanState, createPickBanState, getPickBanState } from "../db/pickBanState";
+import { PickBanFormat, PickBanStatus } from "../generated/prisma/client";
 
 export const data = new SlashCommandBuilder()
   .setName("pickban")
@@ -58,7 +58,11 @@ export const data = new SlashCommandBuilder()
           .addChannelTypes(ChannelType.GuildCategory)
           .setRequired(false),
       ),
-  );
+  )
+  .addSubcommand((sub) =>
+    sub.setName("resend").setDescription("Resend the pick/ban embed for the active session in this channel"),
+  )
+  .addSubcommand((sub) => sub.setName("cancel").setDescription("Cancel the active pick/ban session in this channel"));
 
 export const execute = async (interaction: ChatInputCommandInteraction) => {
   const guild = interaction.guild;
@@ -71,6 +75,11 @@ export const execute = async (interaction: ChatInputCommandInteraction) => {
 
   if (subcommand === "cleanup") {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    if (!guild.members.me?.permissions.has(PermissionFlagsBits.ManageChannels)) {
+      await interaction.editReply("The bot is missing the **Manage Channels** permission required to delete channels.");
+      return;
+    }
 
     const categoryOption = interaction.options.getChannel("category");
 
@@ -93,8 +102,113 @@ export const execute = async (interaction: ChatInputCommandInteraction) => {
         (!filter || c.name.includes(filter)),
     );
 
-    await Promise.all(channels.map((c) => c.delete()));
-    await interaction.editReply(`Deleted ${channels.size} channel${channels.size === 1 ? "" : "s"}.`);
+    const botMe = guild.members.me;
+    const noAccess = channels.filter(
+      (c) => "permissionsFor" in c && !c.permissionsFor(botMe!)?.has(PermissionFlagsBits.ViewChannel),
+    );
+
+    if (noAccess.size > 0) {
+      await interaction.editReply(
+        `Missing **View Channel** permission in: ${noAccess.map((c) => c.toString()).join(", ")}. Grant access or remove them manually.`,
+      );
+      return;
+    }
+
+    const results = await Promise.allSettled(channels.map((c) => c.delete()));
+    const deleted = results.filter((r) => r.status === "fulfilled").length;
+    const failed = results.filter((r) => r.status === "rejected").length;
+    const reply = [`Deleted ${deleted} channel${deleted === 1 ? "" : "s"}.`];
+    if (failed > 0) reply.push(`Failed to delete ${failed} channel${failed === 1 ? "" : "s"}.`);
+    await interaction.editReply(reply.join(" "));
+    return;
+  }
+
+  if (subcommand === "resend") {
+    const state = await getPickBanState(interaction.channelId);
+
+    if (!state) {
+      await interaction.reply({
+        content: "No active pick/ban session in this channel.",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    if (!interaction.channel || !("send" in interaction.channel)) {
+      await interaction.reply({ content: "Command must be run in a guild text channel.", flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    const botMember = guild.members.me;
+    const channelPerms =
+      botMember && "permissionsFor" in interaction.channel ? interaction.channel.permissionsFor(botMember) : null;
+
+    const missingPerms = (
+      [
+        [PermissionFlagsBits.ViewChannel, "View Channel"],
+        [PermissionFlagsBits.ReadMessageHistory, "Read Message History"],
+        [PermissionFlagsBits.SendMessages, "Send Messages"],
+      ] as const
+    )
+      .filter(([flag]) => !channelPerms?.has(flag))
+      .map(([, name]) => `**${name}**`);
+
+    if (missingPerms.length > 0) {
+      await interaction.reply({
+        content: `The bot is missing the following permissions in this channel: ${missingPerms.join(", ")}.`,
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    const messages = await interaction.channel.messages.fetch({ limit: 100 });
+    const botMessages = messages.filter((m) => m.author.id === interaction.client.user.id);
+    await Promise.all(botMessages.map((m) => m.delete().catch(() => null)));
+
+    await interaction.reply({ content: "Pick/ban session resent.", flags: MessageFlags.Ephemeral });
+    await interaction.channel.send({
+      embeds: [buildPickBanEmbed(state)],
+      components: buildPickBanButtons(state),
+    });
+    return;
+  }
+
+  if (subcommand === "cancel") {
+    const state = await getPickBanState(interaction.channelId);
+
+    if (!state) {
+      await interaction.reply({
+        content: "No active pick/ban session in this channel.",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    if (state.status !== PickBanStatus.Active) {
+      await interaction.reply({ content: "This pick/ban session is not active.", flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    await cancelPickBanState(interaction.channelId);
+
+    if (interaction.channel && "messages" in interaction.channel) {
+      const messages = await interaction.channel.messages.fetch({ limit: 100 });
+      const botMessage = messages.find((m) => m.author.id === interaction.client.user.id);
+      if (botMessage) {
+        await botMessage.edit({ embeds: botMessage.embeds.map((e) => e.toJSON()), components: [] });
+      }
+    }
+
+    await interaction.reply({ content: "Pick/ban session cancelled." });
+    return;
+  }
+
+  const botMember = guild.members.me;
+  if (!botMember?.permissions.has(PermissionFlagsBits.ManageChannels)) {
+    await interaction.reply({
+      content: "The bot is missing the **Manage Channels** permission required to create a pick/ban channel.",
+      flags: MessageFlags.Ephemeral,
+    });
     return;
   }
 
@@ -176,17 +290,12 @@ export const execute = async (interaction: ChatInputCommandInteraction) => {
     return;
   }
 
-  const message = await channel.send({
-    content: "Pick/Ban session initializing ...",
-  });
-
   await createPickBanState({
     id: channelId,
     format,
     teamACaptainId: captainA.id,
     teamBCaptainId: captainB.id,
     availableMaps: MAP_POOL.map((m) => m.name),
-    messageId: message.id,
   });
 
   const newState = await getPickBanState(channelId);
@@ -199,10 +308,9 @@ export const execute = async (interaction: ChatInputCommandInteraction) => {
   const messageComponents = buildPickBanButtons(newState);
   const messageEmbed = buildPickBanEmbed(newState);
 
-  await message.edit({
+  await channel.send({
     embeds: [messageEmbed],
     components: messageComponents,
-    content: null,
   });
 
   await interaction.editReply(
