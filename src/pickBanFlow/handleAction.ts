@@ -2,12 +2,19 @@ import type { ButtonInteraction } from "discord.js";
 import { PICK_BAN_CONFIGS } from "../constants.js";
 import { advanceStep, recordAction } from "../db/pickBanAction.js";
 import type { PickBanAction, PickBanState } from "../generated/prisma/client.js";
-import { type MapSide, PickBanStepAction, type WorldOfTanksMapName } from "../generated/prisma/client.js";
+import {
+  type MapSide,
+  PickBanStatus,
+  PickBanStepAction,
+  type WorldOfTanksMapName,
+} from "../generated/prisma/client.js";
 
 export type StateWithActions = PickBanState & { actions: PickBanAction[] };
 
 export async function handleAction(interaction: ButtonInteraction, state: StateWithActions): Promise<StateWithActions> {
-  const { format, currentStepIndex, id, availableMaps } = state;
+  const { format, currentStepIndex, id, availableMaps, status } = state;
+  if (status !== PickBanStatus.Active) throw new Error("Cannot perform action on non-active pick/ban session");
+
   const steps = PICK_BAN_CONFIGS[format];
   const [buttonAction, option] = interaction.customId.split(":");
   const currentStep = steps[currentStepIndex];

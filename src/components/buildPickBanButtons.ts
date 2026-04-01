@@ -8,10 +8,12 @@ type StateWithActions = PickBanState & { actions: PickBanAction[] };
 export function buildPickBanButtons(pickBanState: StateWithActions): ActionRowBuilder<ButtonBuilder>[] {
   const { currentStepIndex, format, status, actions } = pickBanState;
 
+  if (status !== PickBanStatus.Active) return [];
+
   const pickBanSteps = PICK_BAN_CONFIGS[format];
   const currentStep = pickBanSteps[currentStepIndex];
 
-  if (!currentStep || status === PickBanStatus.Complete) return [];
+  if (!currentStep) return [];
 
   const currentStepAction = currentStep.action;
 

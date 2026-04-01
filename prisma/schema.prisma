@@ -62,7 +62,6 @@ model PickBanState {
   deciderMap       WorldOfTanksMapName?
   currentStepIndex Int           @default(0)
   status           PickBanStatus @default(Active)
-  messageId        String
   actions          PickBanAction[]
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
