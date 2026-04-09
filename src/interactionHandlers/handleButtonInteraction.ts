@@ -8,6 +8,10 @@ import { getTurnNotificationContent } from "../lib/getTurnNotificationContent";
 import { handleAction } from "../pickBanFlow/handleAction";
 import { handleFinish } from "../pickBanFlow/handleFinish";
 
+// Set to track channels processing a button interaction to prevent race conditions
+// There will only ever be one active pick/ban session per channel so this is sufficient to prevent concurrent modifications to the same session state
+const processingChannels = new Set<string>();
+
 export async function handleButtonInteraction(interaction: ButtonInteraction) {
   const channelId = interaction.channelId;
 
@@ -49,6 +53,12 @@ export async function handleButtonInteraction(interaction: ButtonInteraction) {
     return;
   }
 
+  if (processingChannels.has(channelId)) {
+    await interaction.deferUpdate();
+    return;
+  }
+
+  processingChannels.add(channelId);
   await interaction.deferUpdate();
 
   try {
@@ -81,5 +91,7 @@ export async function handleButtonInteraction(interaction: ButtonInteraction) {
   } catch (error) {
     console.error("Error during pick/ban interaction:", error);
     await interaction.followUp({ content: "An unexpected error occurred.", flags: MessageFlags.Ephemeral });
+  } finally {
+    processingChannels.delete(channelId);
   }
 }
