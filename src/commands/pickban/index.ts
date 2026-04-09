@@ -1,4 +1,12 @@
-import { ChannelType, type ChatInputCommandInteraction, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import {
+  ChannelType,
+  type ChatInputCommandInteraction,
+  type Guild,
+  type GuildMember,
+  MessageFlags,
+  PermissionFlagsBits,
+  SlashCommandBuilder,
+} from "discord.js";
 import { PickBanFormat } from "../../generated/prisma/client";
 import { executeCancel } from "./cancel";
 import { executeCleanup } from "./cleanup";
@@ -57,7 +65,7 @@ export const data = new SlashCommandBuilder()
           .setName("category")
           .setDescription("Category to clean up (defaults to Pick-Ban-Sessions)")
           .addChannelTypes(ChannelType.GuildCategory)
-          .setRequired(false),
+          .setRequired(true),
       ),
   )
   .addSubcommand((sub) =>
@@ -67,17 +75,33 @@ export const data = new SlashCommandBuilder()
     sub.setName(Subcommand.Cancel).setDescription("Cancel the active pick/ban session in this channel"),
   );
 
+export type GuildChatInputCommandInteraction = ChatInputCommandInteraction & { guild: Guild; botMember: GuildMember };
+
+function hasGuild(
+  interaction: ChatInputCommandInteraction,
+): interaction is ChatInputCommandInteraction & { guild: Guild } {
+  return interaction.guild !== null;
+}
+
 export const execute = async (interaction: ChatInputCommandInteraction) => {
-  const guild = interaction.guild;
-  if (!guild) {
+  if (!hasGuild(interaction)) {
     await interaction.reply({ content: "This command can only be used in a server.", flags: MessageFlags.Ephemeral });
     return;
   }
 
+  const botMember = interaction.guild.members.me;
+  if (!botMember) {
+    await interaction.reply({ content: "Bot member not found in the guild.", flags: MessageFlags.Ephemeral });
+    return;
+  }
+
+  (interaction as GuildChatInputCommandInteraction).botMember = botMember;
+
+  const refinedInteraction = interaction as GuildChatInputCommandInteraction;
   const subcommand = interaction.options.getSubcommand();
 
-  if (subcommand === Subcommand.Start) return executeStart(interaction);
-  if (subcommand === Subcommand.Cleanup) return executeCleanup(interaction);
-  if (subcommand === Subcommand.Resend) return executeResend(interaction);
-  if (subcommand === Subcommand.Cancel) return executeCancel(interaction);
+  if (subcommand === Subcommand.Start) return executeStart(refinedInteraction);
+  if (subcommand === Subcommand.Cleanup) return executeCleanup(refinedInteraction);
+  if (subcommand === Subcommand.Resend) return executeResend(refinedInteraction);
+  if (subcommand === Subcommand.Cancel) return executeCancel(refinedInteraction);
 };

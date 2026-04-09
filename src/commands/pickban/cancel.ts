@@ -1,8 +1,9 @@
-import { type ChatInputCommandInteraction, MessageFlags } from "discord.js";
+import { MessageFlags, TextChannel } from "discord.js";
 import { cancelPickBanState, getPickBanState } from "../../db/pickBanState";
 import { PickBanStatus } from "../../generated/prisma/client";
+import type { GuildChatInputCommandInteraction } from "./index";
 
-export async function executeCancel(interaction: ChatInputCommandInteraction) {
+export async function executeCancel(interaction: GuildChatInputCommandInteraction) {
   const state = await getPickBanState(interaction.channelId);
 
   if (!state) {
@@ -18,15 +19,17 @@ export async function executeCancel(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  await cancelPickBanState(interaction.channelId);
-
-  if (interaction.channel && "messages" in interaction.channel) {
+  if (interaction.channel instanceof TextChannel) {
     const messages = await interaction.channel.messages.fetch({ limit: 100 });
-    const draftMessage = messages.find((m) => m.author.id === interaction.client.user.id && m.embeds.length > 0);
+    const draftMessage = messages.find(
+      (message) => message.author.id === interaction.client.user.id && message.embeds.length > 0,
+    );
     if (draftMessage) {
-      await draftMessage.edit({ embeds: draftMessage.embeds.map((e) => e.toJSON()), components: [] });
+      await draftMessage.edit({ embeds: draftMessage.embeds.map((embed) => embed.toJSON()), components: [] });
     }
   }
+
+  await cancelPickBanState(interaction.channelId);
 
   await interaction.reply({ content: "Pick/ban session cancelled." });
 }

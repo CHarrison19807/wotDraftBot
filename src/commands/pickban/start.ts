@@ -1,21 +1,15 @@
-import {
-  ChannelType,
-  type ChatInputCommandInteraction,
-  MessageFlags,
-  OverwriteType,
-  PermissionFlagsBits,
-} from "discord.js";
+import { ChannelType, MessageFlags, OverwriteType, PermissionFlagsBits } from "discord.js";
 import { buildPickBanButtons } from "../../components/buildPickBanButtons";
 import { buildPickBanEmbed } from "../../components/buildPickBanEmbed";
-import { fallBackCategoryName, MAP_POOL, PICK_BAN_CONFIGS } from "../../constants";
+import { MAP_POOL, PICK_BAN_CONFIGS } from "../../constants";
 import { createPickBanState, getPickBanState } from "../../db/pickBanState";
-import { PickBanFormat } from "../../generated/prisma/client";
+import type { PickBanFormat } from "../../generated/prisma/client";
+import type { GuildChatInputCommandInteraction } from "./index";
 
-export async function executeStart(interaction: ChatInputCommandInteraction) {
-  const guild = interaction.guild!;
+export async function executeStart(interaction: GuildChatInputCommandInteraction) {
+  const { guild, botMember } = interaction;
 
-  const botMember = guild.members.me;
-  if (!botMember?.permissions.has(PermissionFlagsBits.ManageChannels)) {
+  if (!botMember.permissions.has(PermissionFlagsBits.ManageChannels)) {
     await interaction.reply({
       content: "The bot is missing the **Manage Channels** permission required to create a pick/ban channel.",
       flags: MessageFlags.Ephemeral,
@@ -26,7 +20,7 @@ export async function executeStart(interaction: ChatInputCommandInteraction) {
   const format = interaction.options.getString("format", true) as PickBanFormat;
   const captainA = interaction.options.getUser("captain_a", true);
   const captainB = interaction.options.getUser("captain_b", true);
-  const categoryOption = interaction.options.getChannel("category");
+  const categoryOption = interaction.options.getChannel("category", true);
 
   if (captainA.id === captainB.id) {
     await interaction.reply({
@@ -38,21 +32,10 @@ export async function executeStart(interaction: ChatInputCommandInteraction) {
 
   await interaction.deferReply();
 
-  let category =
-    categoryOption ||
-    guild.channels.cache.find((c) => c.type === ChannelType.GuildCategory && c.name === fallBackCategoryName);
-
-  if (!category) {
-    category = await guild.channels.create({
-      name: fallBackCategoryName,
-      type: ChannelType.GuildCategory,
-    });
-  }
-
   const channel = await guild.channels.create({
     name: `pickban-${format.toLowerCase()}-${Date.now()}`,
     type: ChannelType.GuildText,
-    parent: category.id,
+    parent: categoryOption.id,
     permissionOverwrites: [
       {
         id: guild.roles.everyone.id,
@@ -106,10 +89,11 @@ export async function executeStart(interaction: ChatInputCommandInteraction) {
     format,
     teamACaptainId: captainA.id,
     teamBCaptainId: captainB.id,
-    availableMaps: MAP_POOL.map((m) => m.name),
+    availableMaps: MAP_POOL.map((map) => map.name),
   });
 
   const newState = await getPickBanState(channelId);
+
   if (!newState) {
     await channel.delete();
     await interaction.editReply("Failed to create pick/ban session.");

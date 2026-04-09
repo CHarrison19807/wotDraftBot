@@ -1,10 +1,11 @@
-import { type ChatInputCommandInteraction, MessageFlags, PermissionFlagsBits } from "discord.js";
+import { MessageFlags, PermissionFlagsBits, TextChannel } from "discord.js";
 import { buildPickBanButtons } from "../../components/buildPickBanButtons";
 import { buildPickBanEmbed } from "../../components/buildPickBanEmbed";
 import { getPickBanState } from "../../db/pickBanState";
+import type { GuildChatInputCommandInteraction } from "./index";
 
-export async function executeResend(interaction: ChatInputCommandInteraction) {
-  const guild = interaction.guild!;
+export async function executeResend(interaction: GuildChatInputCommandInteraction) {
+  const { botMember } = interaction;
 
   const state = await getPickBanState(interaction.channelId);
 
@@ -16,14 +17,12 @@ export async function executeResend(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  if (!interaction.channel || !("send" in interaction.channel)) {
+  if (!(interaction.channel instanceof TextChannel)) {
     await interaction.reply({ content: "Command must be run in a guild text channel.", flags: MessageFlags.Ephemeral });
     return;
   }
 
-  const botMember = guild.members.me;
-  const channelPerms =
-    botMember && "permissionsFor" in interaction.channel ? interaction.channel.permissionsFor(botMember) : null;
+  const channelPerms = interaction.channel.permissionsFor(botMember);
 
   const missingPerms = (
     [
@@ -32,7 +31,7 @@ export async function executeResend(interaction: ChatInputCommandInteraction) {
       [PermissionFlagsBits.SendMessages, "Send Messages"],
     ] as const
   )
-    .filter(([flag]) => !channelPerms?.has(flag))
+    .filter(([flag]) => !channelPerms.has(flag))
     .map(([, name]) => `**${name}**`);
 
   if (missingPerms.length > 0) {
@@ -44,8 +43,10 @@ export async function executeResend(interaction: ChatInputCommandInteraction) {
   }
 
   const messages = await interaction.channel.messages.fetch({ limit: 100 });
-  const botMessages = messages.filter((m) => m.author.id === interaction.client.user.id && m.embeds.length > 0);
-  await Promise.all(botMessages.map((m) => m.delete().catch(() => null)));
+  const botPickBanStateMessages = messages.filter(
+    (message) => message.author.id === interaction.client.user.id && message.embeds.length > 0,
+  );
+  await Promise.all(botPickBanStateMessages.map((message) => message.delete().catch(() => null)));
 
   await interaction.reply({ content: "Pick/ban session resent.", flags: MessageFlags.Ephemeral });
   await interaction.channel.send({

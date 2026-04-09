@@ -1,60 +1,47 @@
-import { ChannelType, type ChatInputCommandInteraction, MessageFlags, PermissionFlagsBits } from "discord.js";
-import { fallBackCategoryName } from "../../constants";
+import { ChannelType, MessageFlags, PermissionFlagsBits, type TextChannel } from "discord.js";
+import type { GuildChatInputCommandInteraction } from "./index";
 
-export async function executeCleanup(interaction: ChatInputCommandInteraction) {
-  const guild = interaction.guild!;
-
+export async function executeCleanup(interaction: GuildChatInputCommandInteraction) {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  if (!guild.members.me?.permissions.has(PermissionFlagsBits.ManageChannels)) {
+  const { guild, botMember } = interaction;
+
+  if (!botMember.permissions.has(PermissionFlagsBits.ManageChannels)) {
     await interaction.editReply("The bot is missing the **Manage Channels** permission required to delete channels.");
     return;
   }
 
-  const categoryOption = interaction.options.getChannel("category");
-
-  const category =
-    categoryOption ??
-    guild.channels.cache.find((c) => c.type === ChannelType.GuildCategory && c.name === fallBackCategoryName);
-
-  if (!category) {
-    await interaction.editReply(`No category found named **${fallBackCategoryName}**.`);
-    return;
-  }
-
+  const categoryOption = interaction.options.getChannel("category", true, [ChannelType.GuildCategory]);
   const filter = interaction.options.getString("filter", true);
 
-  const channels = guild.channels.cache.filter(
-    (c) =>
-      c.type === ChannelType.GuildText &&
-      "parentId" in c &&
-      c.parentId === category.id &&
-      c.name.includes(filter),
+  const channelsToDelete = guild.channels.cache.filter(
+    (channel): channel is TextChannel =>
+      channel.type === ChannelType.GuildText && channel.parentId === categoryOption.id && channel.name.includes(filter),
   );
 
-  if (channels.size === 0) {
+  if (channelsToDelete.size === 0) {
     await interaction.editReply("No channels found matching the criteria.");
     return;
   }
 
-  const botMe = guild.members.me;
-  const noAccess = channels.filter(
-    (c) => "permissionsFor" in c && !c.permissionsFor(botMe!)?.has(PermissionFlagsBits.ViewChannel),
+  const noAccess = channelsToDelete.filter(
+    (channel) => !channel.permissionsFor(botMember).has(PermissionFlagsBits.ViewChannel),
   );
 
   if (noAccess.size > 0) {
     await interaction.editReply(
-      `Missing **View Channel** permission in: ${noAccess.map((c) => c.toString()).join(", ")}. Grant access or remove them manually.`,
+      `Missing **View Channel** permission for the following channels:\n${noAccess.map((channel) => channel.toString()).join("\n")}\nGrant access or remove them manually.`,
     );
+    // TODO - decide if want to remove the channels we have access to, for now don't delete any if any fail the permission check
     return;
   }
 
-  const results = await Promise.allSettled(channels.map((c) => c.delete()));
-  const deleted = results.filter((r) => r.status === "fulfilled").length;
-  const failed = results.filter((r) => r.status === "rejected").length;
+  const results = await Promise.allSettled(channelsToDelete.map((channel) => channel.delete()));
+  const deleted = results.filter((result) => result.status === "fulfilled").length;
+  const failed = results.filter((result) => result.status === "rejected").length;
 
   const reply = [`Deleted ${deleted} channel${deleted === 1 ? "" : "s"}.`];
   if (failed > 0) reply.push(`Failed to delete ${failed} channel${failed === 1 ? "" : "s"}.`);
-  
+
   await interaction.editReply(reply.join(" "));
 }
