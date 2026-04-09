@@ -1,16 +1,21 @@
 import { PickBanStatus, type Prisma, type WorldOfTanksMapName } from "../generated/prisma/client";
 import { prisma } from "../lib/prisma";
 
-export async function recordAction(data: Prisma.PickBanActionUncheckedCreateInput) {
-  return prisma.pickBanAction.create({ data });
-}
-
-export async function advanceStep(id: string, nextStepIndex: number, availableMaps: WorldOfTanksMapName[]) {
-  return prisma.pickBanState.update({
-    where: { id },
-    data: { currentStepIndex: nextStepIndex, availableMaps },
-    include: { actions: { orderBy: { id: "asc" } } },
-  });
+export async function recordActionAndAdvanceStep(
+  actionData: Prisma.PickBanActionUncheckedCreateInput,
+  stateId: string,
+  nextStepIndex: number,
+  availableMaps: WorldOfTanksMapName[],
+) {
+  const [, updatedState] = await prisma.$transaction([
+    prisma.pickBanAction.create({ data: actionData }),
+    prisma.pickBanState.update({
+      where: { id: stateId },
+      data: { currentStepIndex: nextStepIndex, availableMaps },
+      include: { actions: { orderBy: { id: "asc" } } },
+    }),
+  ]);
+  return updatedState;
 }
 
 export async function completePickBanState(id: string, deciderMap: WorldOfTanksMapName) {

@@ -1,6 +1,6 @@
 import type { ButtonInteraction } from "discord.js";
 import { PICK_BAN_CONFIGS } from "../constants";
-import { advanceStep, recordAction } from "../db/pickBanAction";
+import { recordActionAndAdvanceStep } from "../db/pickBanAction";
 import type { PickBanAction, PickBanState } from "../generated/prisma/client";
 import { type MapSide, PickBanStatus, PickBanStepAction, type WorldOfTanksMapName } from "../generated/prisma/client";
 
@@ -27,14 +27,12 @@ export async function handleAction(interaction: ButtonInteraction, state: StateW
 
     const newAvailable = state.availableMaps.filter((m) => m !== mapName) as WorldOfTanksMapName[];
 
-    await recordAction({
-      stateId: id,
-      action,
-      actingTeam,
-      mapName,
-    });
-
-    return (await advanceStep(id, nextStepIndex, newAvailable)) as StateWithActions;
+    return (await recordActionAndAdvanceStep(
+      { stateId: id, action, actingTeam, mapName },
+      id,
+      nextStepIndex,
+      newAvailable,
+    )) as StateWithActions;
   }
 
   if (currentStep.action === PickBanStepAction.SidePick) {
@@ -47,15 +45,12 @@ export async function handleAction(interaction: ButtonInteraction, state: StateW
     const mapName = previousAction.mapName;
     if (!mapName) throw new Error("No previous map pick found for side pick");
 
-    await recordAction({
-      stateId: id,
-      action,
-      actingTeam,
-      mapName,
-      side,
-    });
-
-    return (await advanceStep(id, nextStepIndex, availableMaps as WorldOfTanksMapName[])) as StateWithActions;
+    return (await recordActionAndAdvanceStep(
+      { stateId: id, action, actingTeam, mapName, side },
+      id,
+      nextStepIndex,
+      availableMaps as WorldOfTanksMapName[],
+    )) as StateWithActions;
   }
 
   throw new Error(`Unhandled step action: ${action}`);
