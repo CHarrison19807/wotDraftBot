@@ -1,13 +1,8 @@
 import type { ButtonInteraction } from "discord.js";
-import { PICK_BAN_CONFIGS } from "../constants.js";
-import { advanceStep, recordAction } from "../db/pickBanAction.js";
-import type { PickBanAction, PickBanState } from "../generated/prisma/client.js";
-import {
-  type MapSide,
-  PickBanStatus,
-  PickBanStepAction,
-  type WorldOfTanksMapName,
-} from "../generated/prisma/client.js";
+import { PICK_BAN_CONFIGS } from "../constants";
+import { advanceStep, recordAction } from "../db/pickBanAction";
+import type { PickBanAction, PickBanState } from "../generated/prisma/client";
+import { type MapSide, PickBanStatus, PickBanStepAction, type WorldOfTanksMapName } from "../generated/prisma/client";
 
 export type StateWithActions = PickBanState & { actions: PickBanAction[] };
 

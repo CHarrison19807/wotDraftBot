@@ -1,5 +1,5 @@
-import { PickBanStatus, type Prisma } from "../generated/prisma/client.js";
-import { prisma } from "../lib/prisma.js";
+import { PickBanStatus, type Prisma } from "../generated/prisma/client";
+import { prisma } from "../lib/prisma";
 
 export async function cancelPickBanState(id: string) {
   return prisma.pickBanState.updateMany({

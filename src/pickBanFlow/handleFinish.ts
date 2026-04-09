@@ -1,7 +1,7 @@
-import { MAP_POOL } from "../constants.js";
-import { completePickBanState } from "../db/pickBanAction.js";
-import type { PickBanAction, PickBanState } from "../generated/prisma/client.js";
-import { PickBanStepAction } from "../generated/prisma/client.js";
+import { MAP_POOL } from "../constants";
+import { completePickBanState } from "../db/pickBanAction";
+import type { PickBanAction, PickBanState } from "../generated/prisma/client";
+import { PickBanStepAction } from "../generated/prisma/client";
 
 type StateWithActions = PickBanState & { actions: PickBanAction[] };
 

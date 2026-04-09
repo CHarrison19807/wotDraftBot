@@ -1,11 +1,11 @@
 import { type ButtonInteraction, MessageFlags } from "discord.js";
-import { buildPickBanButtons } from "../components/buildPickBanButtons.js";
-import { buildPickBanEmbed } from "../components/buildPickBanEmbed.js";
-import { PICK_BAN_CONFIGS } from "../constants.js";
-import { getPickBanState } from "../db/pickBanState.js";
-import { ActingTeam, PickBanStatus } from "../generated/prisma/client.js";
-import { handleAction } from "../pickBanFlow/handleAction.js";
-import { handleFinish } from "../pickBanFlow/handleFinish.js";
+import { buildPickBanButtons } from "../components/buildPickBanButtons";
+import { buildPickBanEmbed } from "../components/buildPickBanEmbed";
+import { PICK_BAN_CONFIGS } from "../constants";
+import { getPickBanState } from "../db/pickBanState";
+import { ActingTeam, PickBanStatus } from "../generated/prisma/client";
+import { handleAction } from "../pickBanFlow/handleAction";
+import { handleFinish } from "../pickBanFlow/handleFinish";
 
 export async function handleButtonInteraction(interaction: ButtonInteraction) {
   const channelId = interaction.channelId;

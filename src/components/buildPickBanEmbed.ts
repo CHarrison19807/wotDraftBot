@@ -1,12 +1,12 @@
 import { EmbedBuilder } from "discord.js";
-import { PICK_BAN_CONFIGS } from "../constants.js";
+import { PICK_BAN_CONFIGS } from "../constants";
 import {
   ActingTeam,
   type PickBanAction,
   type PickBanState,
   PickBanStatus,
   PickBanStepAction,
-} from "../generated/prisma/client.js";
+} from "../generated/prisma/client";
 
 type StateWithActions = PickBanState & { actions: PickBanAction[] };
 
@@ -65,7 +65,7 @@ export function buildPickBanEmbed(pickBanState: StateWithActions): EmbedBuilder 
 
   let description: string;
   if (isComplete) {
-    description = pickBanState.deciderMap ? `**Decider:** ${pickBanState.deciderMap}` : "Pick/ban complete.";
+    description = "Pick/ban complete.";
   } else if (currentStep) {
     const captainId =
       currentStep.actingTeam === ActingTeam.TeamA ? pickBanState.teamACaptainId : pickBanState.teamBCaptainId;
