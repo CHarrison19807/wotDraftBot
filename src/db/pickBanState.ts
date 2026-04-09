@@ -22,3 +22,17 @@ export async function getPickBanState(id: string) {
     include: { actions: { orderBy: { id: "asc" } } },
   });
 }
+
+export async function updateTurnNotificationMessageId(id: string, turnNotificationMessageId: string | null) {
+  return prisma.pickBanState.update({
+    where: { id },
+    data: { turnNotificationMessageId },
+  });
+}
+
+export async function updateDraftMessageId(id: string, draftMessageId: string) {
+  return prisma.pickBanState.update({
+    where: { id },
+    data: { draftMessageId },
+  });
+}

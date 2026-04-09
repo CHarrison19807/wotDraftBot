@@ -1,9 +1,10 @@
-import { type ButtonInteraction, MessageFlags } from "discord.js";
+import { type ButtonInteraction, MessageFlags, TextChannel } from "discord.js";
 import { buildPickBanButtons } from "../components/buildPickBanButtons";
 import { buildPickBanEmbed } from "../components/buildPickBanEmbed";
 import { PICK_BAN_CONFIGS } from "../constants";
-import { getPickBanState } from "../db/pickBanState";
+import { getPickBanState, updateTurnNotificationMessageId } from "../db/pickBanState";
 import { ActingTeam, PickBanStatus } from "../generated/prisma/client";
+import { getTurnNotificationContent } from "../lib/getTurnNotificationContent";
 import { handleAction } from "../pickBanFlow/handleAction";
 import { handleFinish } from "../pickBanFlow/handleFinish";
 
@@ -59,6 +60,24 @@ export async function handleButtonInteraction(interaction: ButtonInteraction) {
       embeds: [buildPickBanEmbed(finalState)],
       components: buildPickBanButtons(finalState),
     });
+
+    if (interaction.channel instanceof TextChannel) {
+      if (state.turnNotificationMessageId) {
+        await interaction.channel.messages.delete(state.turnNotificationMessageId).catch(() => null);
+      }
+
+      if (!isLastStep) {
+        const nextStep = steps[finalState.currentStepIndex];
+        if (nextStep) {
+          const notificationMessage = await interaction.channel.send(
+            getTurnNotificationContent(nextStep, teamACaptainId, teamBCaptainId),
+          );
+          await updateTurnNotificationMessageId(finalState.id, notificationMessage.id);
+        }
+      } else {
+        await updateTurnNotificationMessageId(finalState.id, null);
+      }
+    }
   } catch (error) {
     console.error("Error during pick/ban interaction:", error);
     await interaction.followUp({ content: "An unexpected error occurred.", flags: MessageFlags.Ephemeral });

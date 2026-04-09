@@ -14,18 +14,18 @@ export async function executeCancel(interaction: GuildChatInputCommandInteractio
     return;
   }
 
-  if (state.status !== PickBanStatus.Active) {
+  const { status, draftMessageId } = state;
+
+  if (status !== PickBanStatus.Active) {
     await interaction.reply({ content: "This pick/ban session is not active.", flags: MessageFlags.Ephemeral });
     return;
   }
 
   if (interaction.channel instanceof TextChannel) {
-    const messages = await interaction.channel.messages.fetch({ limit: 100 });
-    const draftMessage = messages.find(
-      (message) => message.author.id === interaction.client.user.id && message.embeds.length > 0,
-    );
+    const draftMessage = await interaction.channel.messages.fetch(draftMessageId).catch(() => null);
+
     if (draftMessage) {
-      await draftMessage.edit({ embeds: draftMessage.embeds.map((embed) => embed.toJSON()), components: [] });
+      await draftMessage.edit({ components: [] });
     }
   }
 

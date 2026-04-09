@@ -43,5 +43,5 @@ export async function executeCleanup(interaction: GuildChatInputCommandInteracti
   const reply = [`Deleted ${deleted} channel${deleted === 1 ? "" : "s"}.`];
   if (failed > 0) reply.push(`Failed to delete ${failed} channel${failed === 1 ? "" : "s"}.`);
 
-  await interaction.editReply(reply.join(" "));
+  await interaction.editReply(reply.join("\n"));
 }

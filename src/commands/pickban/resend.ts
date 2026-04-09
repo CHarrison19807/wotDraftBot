@@ -1,11 +1,13 @@
 import { MessageFlags, PermissionFlagsBits, TextChannel } from "discord.js";
 import { buildPickBanButtons } from "../../components/buildPickBanButtons";
 import { buildPickBanEmbed } from "../../components/buildPickBanEmbed";
-import { getPickBanState } from "../../db/pickBanState";
+import { getPickBanState, updateDraftMessageId } from "../../db/pickBanState";
 import type { GuildChatInputCommandInteraction } from "./index";
 
 export async function executeResend(interaction: GuildChatInputCommandInteraction) {
   const { botMember } = interaction;
+
+  interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   const state = await getPickBanState(interaction.channelId);
 
@@ -42,15 +44,20 @@ export async function executeResend(interaction: GuildChatInputCommandInteractio
     return;
   }
 
-  const messages = await interaction.channel.messages.fetch({ limit: 100 });
-  const botPickBanStateMessages = messages.filter(
-    (message) => message.author.id === interaction.client.user.id && message.embeds.length > 0,
-  );
-  await Promise.all(botPickBanStateMessages.map((message) => message.delete().catch(() => null)));
+  const { draftMessageId } = state;
 
-  await interaction.reply({ content: "Pick/ban session resent.", flags: MessageFlags.Ephemeral });
-  await interaction.channel.send({
+  const draftMessage = await interaction.channel.messages.fetch(draftMessageId).catch(() => null);
+
+  if (draftMessage) {
+    await draftMessage.delete().catch(() => null);
+  }
+
+  const newDraftMessage = await interaction.channel.send({
     embeds: [buildPickBanEmbed(state)],
     components: buildPickBanButtons(state),
   });
+
+  await updateDraftMessageId(interaction.channelId, newDraftMessage.id);
+
+  await interaction.reply({ content: "Pick/ban session resent.", flags: MessageFlags.Ephemeral });
 }

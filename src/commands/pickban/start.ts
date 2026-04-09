@@ -2,8 +2,9 @@ import { ChannelType, MessageFlags, OverwriteType, PermissionFlagsBits } from "d
 import { buildPickBanButtons } from "../../components/buildPickBanButtons";
 import { buildPickBanEmbed } from "../../components/buildPickBanEmbed";
 import { MAP_POOL, PICK_BAN_CONFIGS } from "../../constants";
-import { createPickBanState, getPickBanState } from "../../db/pickBanState";
+import { createPickBanState, getPickBanState, updateTurnNotificationMessageId } from "../../db/pickBanState";
 import type { PickBanFormat } from "../../generated/prisma/client";
+import { getTurnNotificationContent } from "../../lib/getTurnNotificationContent";
 import type { GuildChatInputCommandInteraction } from "./index";
 
 export async function executeStart(interaction: GuildChatInputCommandInteraction) {
@@ -84,12 +85,15 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
     return;
   }
 
+  const draftMessage = await channel.send({ content: "Initiailizing pick/ban session..." });
+
   await createPickBanState({
     id: channelId,
     format,
     teamACaptainId: captainA.id,
     teamBCaptainId: captainB.id,
     availableMaps: MAP_POOL.map((map) => map.name),
+    draftMessageId: draftMessage.id,
   });
 
   const newState = await getPickBanState(channelId);
@@ -100,10 +104,17 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
     return;
   }
 
-  await channel.send({
+  const message = await channel.messages.fetch(draftMessage.id);
+
+  await message.edit({
+    content: null,
     embeds: [buildPickBanEmbed(newState)],
     components: buildPickBanButtons(newState),
   });
+
+  const notificationContent = getTurnNotificationContent(firstStep, captainA.id, captainB.id);
+  const notificationMessage = await channel.send(notificationContent);
+  await updateTurnNotificationMessageId(channelId, notificationMessage.id);
 
   await interaction.editReply(
     `${format} Format\nTeam A Captain: <@${captainA.id}>\nTeam B Captain: <@${captainB.id}>\nPick/ban channel created: ${channel}\nCreated by: <@${interaction.user.id}>`,

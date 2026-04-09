@@ -54,17 +54,19 @@ enum PickBanStatus {
 }
 
 model PickBanState {
-  id               String        @id @unique
-  format           PickBanFormat
-  teamACaptainId   String
-  teamBCaptainId   String
-  availableMaps    WorldOfTanksMapName[]
-  deciderMap       WorldOfTanksMapName?
-  currentStepIndex Int           @default(0)
-  status           PickBanStatus @default(Active)
-  actions          PickBanAction[]
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  id                         String        @id @unique
+  format                     PickBanFormat
+  teamACaptainId             String
+  teamBCaptainId             String
+  availableMaps              WorldOfTanksMapName[]
+  deciderMap                 WorldOfTanksMapName?
+  currentStepIndex           Int           @default(0)
+  status                     PickBanStatus @default(Active)
+  draftMessageId             String
+  turnNotificationMessageId  String?
+  actions                    PickBanAction[]
+  createdAt                  DateTime      @default(now())
+  updatedAt                  DateTime      @updatedAt
 }
 
 model PickBanAction {
