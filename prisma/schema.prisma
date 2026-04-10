@@ -53,8 +53,14 @@ enum PickBanStatus {
   Complete
 }
 
+model GuildConfig {
+  guildId                  String  @id
+  pickBanResultsChannelId  String?
+}
+
 model PickBanState {
   id                         String        @id @unique
+  guildId                    String
   format                     PickBanFormat
   teamACaptainId             String
   teamBCaptainId             String

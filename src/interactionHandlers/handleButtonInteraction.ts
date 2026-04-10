@@ -7,6 +7,7 @@ import { ActingTeam, PickBanStatus } from "../generated/prisma/client";
 import { getTurnNotificationContent } from "../lib/getTurnNotificationContent";
 import { handleAction } from "../pickBanFlow/handleAction";
 import { handleFinish } from "../pickBanFlow/handleFinish";
+import { postPickBanResult } from "../pickBanFlow/postPickBanResult";
 
 // Set to track channels processing a button interaction to prevent race conditions
 // There will only ever be one active pick/ban session per channel so this is sufficient to prevent concurrent modifications to the same session state
@@ -86,6 +87,13 @@ export async function handleButtonInteraction(interaction: ButtonInteraction) {
         }
       } else {
         await updateTurnNotificationMessageId(finalState.id, null);
+
+        if (interaction.guildId) {
+          const result = await postPickBanResult(finalState, interaction.client, interaction.guildId);
+          if (!result.ok) {
+            await interaction.followUp({ content: `Pick/ban complete, but failed to post results: ${result.reason}` });
+          }
+        }
       }
     }
   } catch (error) {
