@@ -5,11 +5,10 @@ import { MAP_POOL, PICK_BAN_CONFIGS } from "../../constants";
 import { createPickBanState, getPickBanState, updateTurnNotificationMessageId } from "../../db/pickBanState";
 import type { PickBanFormat } from "../../generated/prisma/client";
 import { getTurnNotificationContent } from "../../lib/getTurnNotificationContent";
-import type { GuildChatInputCommandInteraction } from "./index";
+import type { GuildChatInputCommandInteraction } from "../../types";
 
 export async function executeStart(interaction: GuildChatInputCommandInteraction) {
   const { guild, botMember } = interaction;
-
   if (!botMember.permissions.has(PermissionFlagsBits.ManageChannels)) {
     await interaction.reply({
       content: "The bot is missing the **Manage Channels** permission required to create a pick/ban channel.",
@@ -89,6 +88,7 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
 
   await createPickBanState({
     id: channelId,
+    guildId: guild.id,
     format,
     teamACaptainId: captainA.id,
     teamBCaptainId: captainB.id,

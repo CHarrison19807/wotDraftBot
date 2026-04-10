@@ -2,7 +2,7 @@ import { MessageFlags, PermissionFlagsBits, TextChannel } from "discord.js";
 import { buildPickBanButtons } from "../../components/buildPickBanButtons";
 import { buildPickBanEmbed } from "../../components/buildPickBanEmbed";
 import { getPickBanState, updateDraftMessageId } from "../../db/pickBanState";
-import type { GuildChatInputCommandInteraction } from "./index";
+import type { GuildChatInputCommandInteraction } from "../../types";
 
 export async function executeResend(interaction: GuildChatInputCommandInteraction) {
   const { botMember } = interaction;

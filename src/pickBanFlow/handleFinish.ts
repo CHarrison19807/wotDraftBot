@@ -1,9 +1,7 @@
 import { MAP_POOL } from "../constants";
 import { completePickBanState } from "../db/pickBanAction";
-import type { PickBanAction, PickBanState } from "../generated/prisma/client";
 import { PickBanStepAction } from "../generated/prisma/client";
-
-type StateWithActions = PickBanState & { actions: PickBanAction[] };
+import type { StateWithActions } from "../types";
 
 export async function handleFinish(state: StateWithActions): Promise<StateWithActions> {
   const pickedOrBanned = new Set(

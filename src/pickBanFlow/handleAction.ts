@@ -1,10 +1,8 @@
 import type { ButtonInteraction } from "discord.js";
 import { PICK_BAN_CONFIGS } from "../constants";
 import { recordActionAndAdvanceStep } from "../db/pickBanAction";
-import type { PickBanAction, PickBanState } from "../generated/prisma/client";
 import { type MapSide, PickBanStatus, PickBanStepAction, type WorldOfTanksMapName } from "../generated/prisma/client";
-
-export type StateWithActions = PickBanState & { actions: PickBanAction[] };
+import type { StateWithActions } from "../types";
 
 export async function handleAction(interaction: ButtonInteraction, state: StateWithActions): Promise<StateWithActions> {
   const { format, currentStepIndex, id, availableMaps, status } = state;

@@ -1,5 +1,5 @@
 import { ChannelType, MessageFlags, PermissionFlagsBits, type TextChannel } from "discord.js";
-import type { GuildChatInputCommandInteraction } from "./index";
+import type { GuildChatInputCommandInteraction } from "../../types";
 
 export async function executeCleanup(interaction: GuildChatInputCommandInteraction) {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });

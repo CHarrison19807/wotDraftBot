@@ -1,14 +1,7 @@
 import { EmbedBuilder } from "discord.js";
 import { PICK_BAN_CONFIGS } from "../constants";
-import {
-  ActingTeam,
-  type PickBanAction,
-  type PickBanState,
-  PickBanStatus,
-  PickBanStepAction,
-} from "../generated/prisma/client";
-
-type StateWithActions = PickBanState & { actions: PickBanAction[] };
+import { ActingTeam, PickBanStatus, PickBanStepAction } from "../generated/prisma/client";
+import type { StateWithActions } from "../types";
 
 export function buildPickBanEmbed(pickBanState: StateWithActions): EmbedBuilder {
   const embed = new EmbedBuilder().setTitle("Pick/Ban Session");

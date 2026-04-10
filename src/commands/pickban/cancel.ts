@@ -1,7 +1,7 @@
 import { MessageFlags, TextChannel } from "discord.js";
 import { cancelPickBanState, getPickBanState } from "../../db/pickBanState";
 import { PickBanStatus } from "../../generated/prisma/client";
-import type { GuildChatInputCommandInteraction } from "./index";
+import type { GuildChatInputCommandInteraction } from "../../types";
 
 export async function executeCancel(interaction: GuildChatInputCommandInteraction) {
   const state = await getPickBanState(interaction.channelId);

@@ -2,12 +2,12 @@ import {
   ChannelType,
   type ChatInputCommandInteraction,
   type Guild,
-  type GuildMember,
   MessageFlags,
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from "discord.js";
 import { PickBanFormat } from "../../generated/prisma/client";
+import type { GuildChatInputCommandInteraction } from "../../types";
 import { executeCancel } from "./cancel";
 import { executeCleanup } from "./cleanup";
 import { executeResend } from "./resend";
@@ -74,8 +74,6 @@ export const data = new SlashCommandBuilder()
   .addSubcommand((sub) =>
     sub.setName(Subcommand.Cancel).setDescription("Cancel the active pick/ban session in this channel"),
   );
-
-export type GuildChatInputCommandInteraction = ChatInputCommandInteraction & { guild: Guild; botMember: GuildMember };
 
 function hasGuild(
   interaction: ChatInputCommandInteraction,
