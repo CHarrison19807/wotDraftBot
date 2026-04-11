@@ -7,7 +7,7 @@ import type { GuildChatInputCommandInteraction } from "../../types";
 export async function executeResend(interaction: GuildChatInputCommandInteraction) {
   const { botMember } = interaction;
 
-  interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   const state = await getPickBanState(interaction.channelId);
 

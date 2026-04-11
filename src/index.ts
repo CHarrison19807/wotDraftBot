@@ -35,4 +35,10 @@ client.on(Events.InteractionCreate, (interaction) => {
   if (interaction.isButton()) handleButtonInteraction(interaction);
 });
 
-client.login(process.env.DISCORD_TOKEN);
+const { DISCORD_TOKEN } = process.env;
+if (!DISCORD_TOKEN) {
+  console.error("Missing required environment variable: DISCORD_TOKEN");
+  process.exit(1);
+}
+
+client.login(DISCORD_TOKEN);
