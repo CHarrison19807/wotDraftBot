@@ -3,7 +3,7 @@ import { buildPickBanButtons } from "../../components/buildPickBanButtons";
 import { buildPickBanEmbed } from "../../components/buildPickBanEmbed";
 import { MAP_POOL, PICK_BAN_CONFIGS } from "../../constants";
 import { createPickBanState, getPickBanState, updateTurnNotificationMessageId } from "../../db/pickBanState";
-import { type PickBanFormat, PickBanStatus } from "../../generated/prisma/client";
+import type { PickBanFormat } from "../../generated/prisma/client";
 import { getTurnNotificationContent } from "../../lib/getTurnNotificationContent";
 import type { GuildChatInputCommandInteraction } from "../../types";
 
@@ -89,7 +89,7 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
     }
 
     const existingState = await getPickBanState(interaction.channel.id);
-    if (existingState?.status === PickBanStatus.Active) {
+    if (existingState) {
       await interaction.editReply("A pick/ban session is already active in this channel.");
       return;
     }
@@ -109,7 +109,7 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
   const draftMessage = await channel.send({ content: "Initializing pick/ban session..." });
 
   await createPickBanState({
-    id: channel.id,
+    channelId: channel.id,
     guildId: guild.id,
     format,
     teamACaptainId: captainA.id,
@@ -134,7 +134,7 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
 
   const notificationContent = getTurnNotificationContent(firstStep, captainA.id, captainB.id);
   const notificationMessage = await channel.send(notificationContent);
-  await updateTurnNotificationMessageId(channel.id, notificationMessage.id);
+  await updateTurnNotificationMessageId(newState.id, notificationMessage.id);
 
   await interaction.followUp({
     content: `${format} Format\nTeam A Captain: <@${captainA.id}>\nTeam B Captain: <@${captainB.id}>\nPick/ban channel: ${channel}\nCreated by: <@${interaction.user.id}>`,

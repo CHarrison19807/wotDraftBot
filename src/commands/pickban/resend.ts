@@ -57,7 +57,7 @@ export async function executeResend(interaction: GuildChatInputCommandInteractio
     components: buildPickBanButtons(state),
   });
 
-  await updateDraftMessageId(interaction.channelId, newDraftMessage.id);
+  await updateDraftMessageId(state.id, newDraftMessage.id);
 
   await interaction.reply({ content: "Pick/ban session resent.", flags: MessageFlags.Ephemeral });
 }

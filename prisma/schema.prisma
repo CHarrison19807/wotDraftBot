@@ -59,7 +59,8 @@ model GuildConfig {
 }
 
 model PickBanState {
-  id                         String        @id @unique
+  id                         String        @id @default(cuid())
+  channelId                  String
   guildId                    String
   format                     PickBanFormat
   teamACaptainId             String
