@@ -45,7 +45,7 @@ export const data = new SlashCommandBuilder()
       .addChannelOption((opt) =>
         opt
           .setName("category")
-          .setDescription("Category to create the pick/ban channel in")
+          .setDescription("Category to create a pick/ban channel in (omit to use the current channel)")
           .addChannelTypes(ChannelType.GuildCategory)
           .setRequired(false),
       ),
@@ -63,7 +63,7 @@ export const data = new SlashCommandBuilder()
       .addChannelOption((opt) =>
         opt
           .setName("category")
-          .setDescription("Category to clean up (defaults to Pick-Ban-Sessions)")
+          .setDescription("Category to clean up")
           .addChannelTypes(ChannelType.GuildCategory)
           .setRequired(true),
       ),
