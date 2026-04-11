@@ -44,8 +44,8 @@ export const MAP_POOL: WorldOfTanksMap[] = [
     sideOptions: [North, South],
   },
   {
-    name: WorldOfTanksMapName.Murovanka,
-    sideOptions: [North, South],
+    name: WorldOfTanksMapName.Westfield,
+    sideOptions: [East, West],
   },
   {
     name: WorldOfTanksMapName.Pilsen,
