@@ -22,5 +22,5 @@ export async function handleFinish(state: StateWithActions): Promise<StateWithAc
     throw new Error("Failed to select a decider map");
   }
 
-  return completePickBanState(state.id, decider.name) as Promise<StateWithActions>;
+  return completePickBanState(state.id, decider.name);
 }

@@ -1,7 +1,8 @@
 import type { ButtonInteraction } from "discord.js";
 import { PICK_BAN_CONFIGS } from "../constants";
 import { recordActionAndAdvanceStep } from "../db/pickBanAction";
-import { type MapSide, PickBanStatus, PickBanStepAction, type WorldOfTanksMapName } from "../generated/prisma/client";
+import { PickBanStatus, PickBanStepAction } from "../generated/prisma/client";
+import { isMapSide, isWorldOfTanksMapName } from "../lib/guards";
 import type { StateWithActions } from "../types";
 
 export async function handleAction(interaction: ButtonInteraction, state: StateWithActions): Promise<StateWithActions> {
@@ -20,22 +21,24 @@ export async function handleAction(interaction: ButtonInteraction, state: StateW
   const nextStepIndex = currentStepIndex + 1;
 
   if (action === PickBanStepAction.MapBan || action === PickBanStepAction.MapPick) {
-    const mapName = option as WorldOfTanksMapName;
-    if (!mapName) throw new Error("Missing map name in customId");
+    if (!option || !isWorldOfTanksMapName(option)) {
+      throw new Error(`Invalid or missing map name in customId: ${option}`);
+    }
 
-    const newAvailable = state.availableMaps.filter((m) => m !== mapName) as WorldOfTanksMapName[];
+    const newAvailable = state.availableMaps.filter((m) => m !== option);
 
-    return (await recordActionAndAdvanceStep(
-      { stateId: id, action, actingTeam, mapName },
+    return recordActionAndAdvanceStep(
+      { stateId: id, action, actingTeam, mapName: option },
       id,
       nextStepIndex,
       newAvailable,
-    )) as StateWithActions;
+    );
   }
 
   if (currentStep.action === PickBanStepAction.SidePick) {
-    const side = option as MapSide;
-    if (!side) throw new Error("Missing side in customId");
+    if (!option || !isMapSide(option)) {
+      throw new Error(`Invalid or missing side in customId: ${option}`);
+    }
 
     const previousAction = state.actions[currentStepIndex - 1];
     if (!previousAction) throw new Error("No previous action found for side pick");
@@ -43,12 +46,12 @@ export async function handleAction(interaction: ButtonInteraction, state: StateW
     const mapName = previousAction.mapName;
     if (!mapName) throw new Error("No previous map pick found for side pick");
 
-    return (await recordActionAndAdvanceStep(
-      { stateId: id, action, actingTeam, mapName, side },
+    return recordActionAndAdvanceStep(
+      { stateId: id, action, actingTeam, mapName, side: option },
       id,
       nextStepIndex,
-      availableMaps as WorldOfTanksMapName[],
-    )) as StateWithActions;
+      availableMaps,
+    );
   }
 
   throw new Error(`Unhandled step action: ${action}`);
