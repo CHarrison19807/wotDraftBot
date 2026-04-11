@@ -1,6 +1,7 @@
 import { EmbedBuilder } from "discord.js";
 import { PICK_BAN_CONFIGS } from "../constants";
 import { ActingTeam, PickBanStatus, PickBanStepAction } from "../generated/prisma/client";
+import { formatMapName } from "../lib/formatMapName";
 import type { StateWithActions } from "../types";
 
 export function buildPickBanEmbed(pickBanState: StateWithActions): EmbedBuilder {
@@ -28,26 +29,34 @@ export function buildPickBanEmbed(pickBanState: StateWithActions): EmbedBuilder 
     if (!a) break;
 
     if (a.action === PickBanStepAction.MapBan) {
+      if (!a.mapName) {
+        throw new Error(`Missing map name for MapBan action at index ${i} of pick/ban state ${pickBanState.id}`);
+      }
+
       rows.push({
-        teamA: a.actingTeam === ActingTeam.TeamA ? (a.mapName ?? "-") : "-",
+        teamA: a.actingTeam === ActingTeam.TeamA ? (formatMapName(a.mapName) ?? "-") : "-",
         action: "Ban",
-        teamB: a.actingTeam === ActingTeam.TeamB ? (a.mapName ?? "-") : "-",
+        teamB: a.actingTeam === ActingTeam.TeamB ? (formatMapName(a.mapName) ?? "-") : "-",
       });
       i++;
     } else if (a.action === PickBanStepAction.MapPick) {
+      if (!a.mapName) {
+        throw new Error(`Missing map name for MapPick action at index ${i} of pick/ban state ${pickBanState.id}`);
+      }
+
       const next = actions[i + 1];
       if (next?.action === PickBanStepAction.SidePick) {
         rows.push({
-          teamA: a.actingTeam === ActingTeam.TeamA ? (a.mapName ?? "-") : (next.side ?? "-"),
+          teamA: a.actingTeam === ActingTeam.TeamA ? (formatMapName(a.mapName) ?? "-") : (next.side ?? "-"),
           action: "Pick",
-          teamB: a.actingTeam === ActingTeam.TeamB ? (a.mapName ?? "-") : (next.side ?? "-"),
+          teamB: a.actingTeam === ActingTeam.TeamB ? (formatMapName(a.mapName) ?? "-") : (next.side ?? "-"),
         });
         i += 2;
       } else {
         rows.push({
-          teamA: a.actingTeam === ActingTeam.TeamA ? (a.mapName ?? "-") : "-",
+          teamA: a.actingTeam === ActingTeam.TeamA ? (formatMapName(a.mapName) ?? "-") : "-",
           action: "Pick",
-          teamB: a.actingTeam === ActingTeam.TeamB ? (a.mapName ?? "-") : "-",
+          teamB: a.actingTeam === ActingTeam.TeamB ? (formatMapName(a.mapName) ?? "-") : "-",
         });
         i++;
       }
@@ -74,7 +83,11 @@ export function buildPickBanEmbed(pickBanState: StateWithActions): EmbedBuilder 
   }
 
   if (isComplete && pickBanState.deciderMap) {
-    rows.push({ teamA: pickBanState.deciderMap, action: "Decider", teamB: pickBanState.deciderMap });
+    rows.push({
+      teamA: formatMapName(pickBanState.deciderMap),
+      action: "Decider",
+      teamB: formatMapName(pickBanState.deciderMap),
+    });
   }
 
   const teamACol = rows.map((r) => r.teamA).join("\n") || "\u200b";
