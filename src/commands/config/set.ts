@@ -18,6 +18,7 @@ export async function executeSet(interaction: GuildChatInputCommandInteraction) 
     const permissionNames = missingPermissions.map((perm) => {
       if (perm === PermissionFlagsBits.ViewChannel) return "**View Channel**";
       if (perm === PermissionFlagsBits.SendMessages) return "**Send Messages**";
+      return `**Unknown Permission ${perm}**`;
     });
 
     await interaction.reply({

@@ -74,7 +74,11 @@ export async function handleButtonInteraction(interaction: ButtonInteraction) {
 
     if (interaction.channel instanceof TextChannel) {
       if (state.turnNotificationMessageId) {
-        await interaction.channel.messages.delete(state.turnNotificationMessageId).catch(() => null);
+        await interaction.channel.messages
+          .delete(state.turnNotificationMessageId)
+          .catch((error) =>
+            console.warn(`Failed to delete turn notification message ${state.turnNotificationMessageId}:`, error),
+          );
       }
 
       if (!isLastStep) {
