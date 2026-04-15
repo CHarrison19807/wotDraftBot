@@ -1,4 +1,11 @@
-import { ChannelType, MessageFlags, OverwriteType, PermissionFlagsBits, TextChannel } from "discord.js";
+import {
+  ChannelType,
+  type GuildMember,
+  MessageFlags,
+  OverwriteType,
+  PermissionFlagsBits,
+  TextChannel,
+} from "discord.js";
 import { buildPickBanButtons } from "../../components/buildPickBanButtons";
 import { buildPickBanEmbed } from "../../components/buildPickBanEmbed";
 import { MAP_POOL, PICK_BAN_CONFIGS } from "../../constants";
@@ -7,8 +14,8 @@ import type { PickBanFormat } from "../../generated/prisma/client";
 import { getTurnNotificationContent } from "../../lib/getTurnNotificationContent";
 import type { GuildChatInputCommandInteraction } from "../../types";
 
-export async function executeStart(interaction: GuildChatInputCommandInteraction) {
-  const { guild, botMember } = interaction;
+export async function executeStart(interaction: GuildChatInputCommandInteraction, botMember: GuildMember) {
+  const { guild } = interaction;
 
   const format = interaction.options.getString("format", true) as PickBanFormat;
   const captainA = interaction.options.getUser("captain_a", true);
@@ -106,37 +113,41 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
     return;
   }
 
-  const draftMessage = await channel.send({ content: "Initializing pick/ban session..." });
+  try {
+    const draftMessage = await channel.send({ content: "Initializing pick/ban session..." });
 
-  await createPickBanState({
-    channelId: channel.id,
-    guildId: guild.id,
-    format,
-    teamACaptainId: captainA.id,
-    teamBCaptainId: captainB.id,
-    availableMaps: MAP_POOL.map((map) => map.name),
-    draftMessageId: draftMessage.id,
-  });
+    await createPickBanState({
+      channelId: channel.id,
+      guildId: guild.id,
+      format,
+      teamACaptainId: captainA.id,
+      teamBCaptainId: captainB.id,
+      availableMaps: MAP_POOL.map((map) => map.name),
+      draftMessageId: draftMessage.id,
+    });
 
-  const newState = await getPickBanState(channel.id);
-  if (!newState) {
-    if (createdChannel) await channel.delete();
-    await interaction.editReply("Failed to create pick/ban session.");
-    return;
+    const newState = await getPickBanState(channel.id);
+    if (!newState) {
+      if (createdChannel) await channel.delete().catch(() => null);
+      await interaction.editReply("Failed to create pick/ban session.");
+      return;
+    }
+
+    await draftMessage.edit({
+      content: null,
+      embeds: [buildPickBanEmbed(newState)],
+      components: buildPickBanButtons(newState),
+    });
+
+    const notificationContent = getTurnNotificationContent(firstStep, captainA.id, captainB.id);
+    const notificationMessage = await channel.send(notificationContent);
+    await updateTurnNotificationMessageId(newState.id, notificationMessage.id);
+
+    await interaction.editReply({
+      content: `${format} Format\nTeam A Captain: <@${captainA.id}>\nTeam B Captain: <@${captainB.id}>\nPick/ban channel: ${channel}\nCreated by: <@${interaction.user.id}>`,
+    });
+  } catch (error) {
+    if (createdChannel) await channel.delete().catch(() => null);
+    throw error;
   }
-
-  const message = await channel.messages.fetch(draftMessage.id);
-  await message.edit({
-    content: null,
-    embeds: [buildPickBanEmbed(newState)],
-    components: buildPickBanButtons(newState),
-  });
-
-  const notificationContent = getTurnNotificationContent(firstStep, captainA.id, captainB.id);
-  const notificationMessage = await channel.send(notificationContent);
-  await updateTurnNotificationMessageId(newState.id, notificationMessage.id);
-
-  await interaction.followUp({
-    content: `${format} Format\nTeam A Captain: <@${captainA.id}>\nTeam B Captain: <@${captainB.id}>\nPick/ban channel: ${channel}\nCreated by: <@${interaction.user.id}>`,
-  });
 }

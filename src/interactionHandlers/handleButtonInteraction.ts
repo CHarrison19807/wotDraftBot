@@ -3,7 +3,7 @@ import { buildPickBanButtons } from "../components/buildPickBanButtons";
 import { buildPickBanEmbed } from "../components/buildPickBanEmbed";
 import { PICK_BAN_CONFIGS } from "../constants";
 import { getPickBanState, updateTurnNotificationMessageId } from "../db/pickBanState";
-import { ActingTeam, PickBanStatus } from "../generated/prisma/client";
+import { ActingTeam } from "../generated/prisma/client";
 import { getTurnNotificationContent } from "../lib/getTurnNotificationContent";
 import { handleAction } from "../pickBanFlow/handleAction";
 import { handleFinish } from "../pickBanFlow/handleFinish";
@@ -23,12 +23,7 @@ export async function handleButtonInteraction(interaction: ButtonInteraction) {
     return;
   }
 
-  const { teamACaptainId, teamBCaptainId, format, currentStepIndex, status } = state;
-
-  if (status === PickBanStatus.Complete) {
-    await interaction.reply({ content: "This pick/ban session is already complete.", flags: MessageFlags.Ephemeral });
-    return;
-  }
+  const { teamACaptainId, teamBCaptainId, format, currentStepIndex } = state;
 
   const steps = PICK_BAN_CONFIGS[format];
   const currentStep = steps[currentStepIndex];
@@ -59,10 +54,10 @@ export async function handleButtonInteraction(interaction: ButtonInteraction) {
     return;
   }
 
-  processingChannels.add(channelId);
-  await interaction.deferUpdate();
-
   try {
+    processingChannels.add(channelId);
+    await interaction.deferUpdate();
+
     const isLastStep = currentStepIndex + 1 >= steps.length;
     const updatedState = await handleAction(interaction, state);
     const finalState = isLastStep ? await handleFinish(updatedState) : updatedState;

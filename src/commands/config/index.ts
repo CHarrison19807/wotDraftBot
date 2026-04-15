@@ -5,7 +5,7 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from "discord.js";
-import { refineInteraction } from "../../lib/refineInteraction";
+import { verifyInteraction } from "../../lib/verifyInteraction";
 import { executeSet } from "./set";
 import { executeView } from "./view";
 
@@ -33,14 +33,16 @@ export const data = new SlashCommandBuilder()
   .addSubcommand((sub) => sub.setName(Subcommand.View).setDescription("View current config settings"));
 
 export const execute = async (interaction: ChatInputCommandInteraction) => {
-  const refined = refineInteraction(interaction);
-  if (!refined) {
+  const result = verifyInteraction(interaction);
+
+  if (!result) {
     await interaction.reply({ content: "This command can only be used in a server.", flags: MessageFlags.Ephemeral });
     return;
   }
 
-  const subcommand = refined.options.getSubcommand();
+  const { interaction: verifiedInteraction, botMember } = result;
+  const subcommand = verifiedInteraction.options.getSubcommand();
 
-  if (subcommand === Subcommand.Set) return executeSet(refined);
-  if (subcommand === Subcommand.View) return executeView(refined);
+  if (subcommand === Subcommand.Set) return executeSet(verifiedInteraction, botMember);
+  if (subcommand === Subcommand.View) return executeView(verifiedInteraction);
 };

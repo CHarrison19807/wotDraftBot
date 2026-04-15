@@ -11,7 +11,7 @@ export async function recordActionAndAdvanceStep(
   const [, updatedState] = await prisma.$transaction([
     prisma.pickBanAction.create({ data: actionData }),
     prisma.pickBanState.update({
-      where: { id: stateId },
+      where: { id: stateId, status: PickBanStatus.Active },
       data: { currentStepIndex: nextStepIndex, availableMaps },
       include: { actions: { orderBy: { id: "asc" } } },
     }),

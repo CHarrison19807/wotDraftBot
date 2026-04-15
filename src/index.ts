@@ -32,7 +32,7 @@ client.on(Events.ChannelDelete, (channel) => {
 
 client.on(Events.InteractionCreate, (interaction) => {
   if (interaction.isChatInputCommand()) handleSlashCommand(interaction);
-  if (interaction.isButton()) handleButtonInteraction(interaction);
+  if (interaction.isButton()) handleButtonInteraction(interaction).catch(console.error);
 });
 
 const { DISCORD_TOKEN } = process.env;

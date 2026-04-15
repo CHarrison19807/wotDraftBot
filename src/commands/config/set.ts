@@ -1,8 +1,8 @@
-import { ChannelType, MessageFlags, PermissionFlagsBits, TextChannel } from "discord.js";
+import { ChannelType, type GuildMember, MessageFlags, PermissionFlagsBits, TextChannel } from "discord.js";
 import { setPickBanResultsChannel } from "../../db/guildConfig";
 import type { GuildChatInputCommandInteraction } from "../../types";
 
-export async function executeSet(interaction: GuildChatInputCommandInteraction) {
+export async function executeSet(interaction: GuildChatInputCommandInteraction, botMember: GuildMember) {
   const channelOption = interaction.options.getChannel("results-channel", true, [ChannelType.GuildText]);
   const channel = interaction.guild.channels.cache.get(channelOption.id);
 
@@ -11,15 +11,17 @@ export async function executeSet(interaction: GuildChatInputCommandInteraction) 
     return;
   }
   const requiredPermissions = [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages];
-  const botPermissions = channel.permissionsFor(interaction.botMember);
+  const botPermissions = channel.permissionsFor(botMember);
   const missingPermissions = requiredPermissions.filter((perm) => !botPermissions.has(perm));
 
   if (missingPermissions.length > 0) {
-    const permissionNames = missingPermissions.map((perm) => {
-      if (perm === PermissionFlagsBits.ViewChannel) return "**View Channel**";
-      if (perm === PermissionFlagsBits.SendMessages) return "**Send Messages**";
-      return `**Unknown Permission ${perm}**`;
-    });
+    const permissionLabels = new Map([
+      [PermissionFlagsBits.ViewChannel, "View Channel"],
+      [PermissionFlagsBits.SendMessages, "Send Messages"],
+    ]);
+    const permissionNames = missingPermissions.map(
+      (perm) => `**${permissionLabels.get(perm) ?? `Unknown (${perm})`}**`,
+    );
 
     await interaction.reply({
       content: `The bot is missing the following permissions in ${channel}: ${permissionNames.join(", ")}.\nGrant these permissions and try again.`,

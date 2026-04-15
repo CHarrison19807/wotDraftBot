@@ -46,6 +46,12 @@ export function buildPickBanButtons(pickBanState: StateWithActions): ActionRowBu
 
   const style = currentStepAction === PickBanStepAction.MapPick ? ButtonStyle.Success : ButtonStyle.Danger;
 
+  if (pickBanState.availableMaps.length > 25) {
+    throw new Error(
+      `Too many available maps (${pickBanState.availableMaps.length}) for pick/ban state ${pickBanState.id} to create buttons`,
+    );
+  }
+
   for (const mapName of pickBanState.availableMaps) {
     if (row.components.length === 5) {
       rows.push(row);

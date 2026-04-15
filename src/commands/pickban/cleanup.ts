@@ -1,10 +1,10 @@
-import { ChannelType, MessageFlags, PermissionFlagsBits, type TextChannel } from "discord.js";
+import { ChannelType, type GuildMember, MessageFlags, PermissionFlagsBits, type TextChannel } from "discord.js";
 import type { GuildChatInputCommandInteraction } from "../../types";
 
-export async function executeCleanup(interaction: GuildChatInputCommandInteraction) {
+export async function executeCleanup(interaction: GuildChatInputCommandInteraction, botMember: GuildMember) {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  const { guild, botMember } = interaction;
+  const { guild } = interaction;
 
   if (!botMember.permissions.has(PermissionFlagsBits.ManageChannels)) {
     await interaction.editReply("The bot is missing the **Manage Channels** permission required to delete channels.");

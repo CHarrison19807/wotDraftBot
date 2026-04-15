@@ -34,9 +34,9 @@ export function buildPickBanEmbed(pickBanState: StateWithActions): EmbedBuilder 
       }
 
       rows.push({
-        teamA: a.actingTeam === ActingTeam.TeamA ? (formatMapName(a.mapName) ?? "-") : "-",
+        teamA: a.actingTeam === ActingTeam.TeamA ? formatMapName(a.mapName) : "-",
         action: "Ban",
-        teamB: a.actingTeam === ActingTeam.TeamB ? (formatMapName(a.mapName) ?? "-") : "-",
+        teamB: a.actingTeam === ActingTeam.TeamB ? formatMapName(a.mapName) : "-",
       });
       i++;
     } else if (a.action === PickBanStepAction.MapPick) {
@@ -47,16 +47,16 @@ export function buildPickBanEmbed(pickBanState: StateWithActions): EmbedBuilder 
       const next = actions[i + 1];
       if (next?.action === PickBanStepAction.SidePick) {
         rows.push({
-          teamA: a.actingTeam === ActingTeam.TeamA ? (formatMapName(a.mapName) ?? "-") : (next.side ?? "-"),
+          teamA: a.actingTeam === ActingTeam.TeamA ? formatMapName(a.mapName) : (next.side ?? "-"),
           action: "Pick",
-          teamB: a.actingTeam === ActingTeam.TeamB ? (formatMapName(a.mapName) ?? "-") : (next.side ?? "-"),
+          teamB: a.actingTeam === ActingTeam.TeamB ? formatMapName(a.mapName) : (next.side ?? "-"),
         });
         i += 2;
       } else {
         rows.push({
-          teamA: a.actingTeam === ActingTeam.TeamA ? (formatMapName(a.mapName) ?? "-") : "-",
+          teamA: a.actingTeam === ActingTeam.TeamA ? formatMapName(a.mapName) : "-",
           action: "Pick",
-          teamB: a.actingTeam === ActingTeam.TeamB ? (formatMapName(a.mapName) ?? "-") : "-",
+          teamB: a.actingTeam === ActingTeam.TeamB ? formatMapName(a.mapName) : "-",
         });
         i++;
       }

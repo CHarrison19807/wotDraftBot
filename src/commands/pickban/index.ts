@@ -6,7 +6,7 @@ import {
   SlashCommandBuilder,
 } from "discord.js";
 import { PickBanFormat } from "../../generated/prisma/client";
-import { refineInteraction } from "../../lib/refineInteraction";
+import { verifyInteraction } from "../../lib/verifyInteraction";
 import { executeCancel } from "./cancel";
 import { executeCleanup } from "./cleanup";
 import { executeResend } from "./resend";
@@ -75,16 +75,18 @@ export const data = new SlashCommandBuilder()
   );
 
 export const execute = async (interaction: ChatInputCommandInteraction) => {
-  const refined = refineInteraction(interaction);
-  if (!refined) {
+  const result = verifyInteraction(interaction);
+
+  if (!result) {
     await interaction.reply({ content: "This command can only be used in a server.", flags: MessageFlags.Ephemeral });
     return;
   }
 
-  const subcommand = refined.options.getSubcommand();
+  const { interaction: verifiedInteraction, botMember } = result;
+  const subcommand = verifiedInteraction.options.getSubcommand();
 
-  if (subcommand === Subcommand.Start) return executeStart(refined);
-  if (subcommand === Subcommand.Cleanup) return executeCleanup(refined);
-  if (subcommand === Subcommand.Resend) return executeResend(refined);
-  if (subcommand === Subcommand.Cancel) return executeCancel(refined);
+  if (subcommand === Subcommand.Start) return executeStart(verifiedInteraction, botMember);
+  if (subcommand === Subcommand.Cleanup) return executeCleanup(verifiedInteraction, botMember);
+  if (subcommand === Subcommand.Resend) return executeResend(verifiedInteraction, botMember);
+  if (subcommand === Subcommand.Cancel) return executeCancel(verifiedInteraction);
 };
