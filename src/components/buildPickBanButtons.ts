@@ -1,7 +1,7 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 import { MAP_POOL, PICK_BAN_CONFIGS } from "../constants";
 import { PickBanStatus, PickBanStepAction } from "../generated/prisma/client";
-import { formatMapName } from "../lib/formatMapName";
+import { formatMapName } from "../lib/pickban/formatMapName";
 import type { StateWithActions } from "../types";
 
 export function buildPickBanButtons(pickBanState: StateWithActions): ActionRowBuilder<ButtonBuilder>[] {

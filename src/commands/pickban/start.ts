@@ -11,7 +11,7 @@ import { buildPickBanEmbed } from "../../components/buildPickBanEmbed";
 import { MAP_POOL, PICK_BAN_CONFIGS } from "../../constants";
 import { createPickBanState, getPickBanState, updateTurnNotificationMessageId } from "../../db/pickBanState";
 import type { PickBanFormat } from "../../generated/prisma/client";
-import { getTurnNotificationContent } from "../../lib/getTurnNotificationContent";
+import { getTurnNotificationContent } from "../../lib/pickban/getTurnNotificationContent";
 import type { GuildChatInputCommandInteraction } from "../../types";
 
 export async function executeStart(interaction: GuildChatInputCommandInteraction, botMember: GuildMember) {

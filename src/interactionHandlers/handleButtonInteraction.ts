@@ -4,7 +4,7 @@ import { buildPickBanEmbed } from "../components/buildPickBanEmbed";
 import { PICK_BAN_CONFIGS } from "../constants";
 import { getPickBanState, updateTurnNotificationMessageId } from "../db/pickBanState";
 import { ActingTeam } from "../generated/prisma/client";
-import { getTurnNotificationContent } from "../lib/getTurnNotificationContent";
+import { getTurnNotificationContent } from "../lib/pickban/getTurnNotificationContent";
 import { handleAction } from "../pickBanFlow/handleAction";
 import { handleFinish } from "../pickBanFlow/handleFinish";
 import { postPickBanResult } from "../pickBanFlow/postPickBanResult";

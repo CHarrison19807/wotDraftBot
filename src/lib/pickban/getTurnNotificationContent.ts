@@ -1,4 +1,4 @@
-import { ActingTeam, PickBanStepAction } from "../generated/prisma/client";
+import { ActingTeam, PickBanStepAction } from "../../generated/prisma/client";
 
 const actionText: Record<PickBanStepAction, string> = {
   [PickBanStepAction.MapBan]: "ban a map",
