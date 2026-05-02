@@ -3,10 +3,15 @@ import { Client, Events, GatewayIntentBits } from "discord.js";
 import { upsertGuildConfig } from "./db/guildConfig";
 import { deleteOrphanedPickBanState } from "./db/pickBanState";
 import { handleButtonInteraction } from "./interactionHandlers/handleButtonInteraction";
+import {
+  handleSetOrderConfirm,
+  handleSetOrderMenu,
+  handleSetOrderReset,
+} from "./interactionHandlers/handleSetOrderInteraction";
 import { handleSlashCommand } from "./interactionHandlers/handleSlashCommand";
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds],
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
 });
 
 client.once(Events.ClientReady, async (readyClient) => {
@@ -32,7 +37,21 @@ client.on(Events.ChannelDelete, (channel) => {
 
 client.on(Events.InteractionCreate, (interaction) => {
   if (interaction.isChatInputCommand()) handleSlashCommand(interaction);
-  if (interaction.isButton()) handleButtonInteraction(interaction).catch(console.error);
+
+  if (interaction.isStringSelectMenu() && interaction.customId.startsWith("draft_setorder_menu:")) {
+    handleSetOrderMenu(interaction).catch(console.error);
+    return;
+  }
+
+  if (interaction.isButton()) {
+    if (interaction.customId.startsWith("draft_setorder_confirm:")) {
+      handleSetOrderConfirm(interaction).catch(console.error);
+    } else if (interaction.customId.startsWith("draft_setorder_reset:")) {
+      handleSetOrderReset(interaction).catch(console.error);
+    } else {
+      handleButtonInteraction(interaction).catch(console.error);
+    }
+  }
 });
 
 const { DISCORD_TOKEN } = process.env;

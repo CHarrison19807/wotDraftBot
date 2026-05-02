@@ -16,6 +16,8 @@ const South = MapSide.South;
 const East = MapSide.East;
 const West = MapSide.West;
 
+export const WG_API_BASE = "https://api.worldoftanks.com";
+
 export interface WorldOfTanksMap {
   name: WorldOfTanksMapName;
   sideOptions: MapSide[];
