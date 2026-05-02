@@ -5,6 +5,7 @@ import {
   type MessageActionRowComponentBuilder,
   StringSelectMenuBuilder,
 } from "discord.js";
+import { CustomId } from "../constants";
 
 export interface CaptainInfo {
   userId: string;
@@ -23,11 +24,11 @@ export function buildSetOrderComponents(
   if (remaining.length === 0) {
     // All captains placed - show confirm + reset in one row
     const confirmBtn = new ButtonBuilder()
-      .setCustomId(`draft_setorder_confirm:${sessionId}`)
+      .setCustomId(`${CustomId.DraftSetOrderConfirm}:${sessionId}`)
       .setLabel("Confirm Order")
       .setStyle(ButtonStyle.Success);
     const resetBtn = new ButtonBuilder()
-      .setCustomId(`draft_setorder_reset:${sessionId}`)
+      .setCustomId(`${CustomId.DraftSetOrderReset}:${sessionId}`)
       .setLabel("Reset")
       .setStyle(ButtonStyle.Danger);
     rows.push(
@@ -41,7 +42,7 @@ export function buildSetOrderComponents(
 
   // Show select menu for next captain
   const menu = new StringSelectMenuBuilder()
-    .setCustomId(`draft_setorder_menu:${sessionId}`)
+    .setCustomId(`${CustomId.DraftSetOrderMenu}:${sessionId}`)
     .setPlaceholder(`Select captain for pick slot #${currentOrder.length + 1}`)
     .addOptions(
       remaining.map((c) => ({
@@ -57,7 +58,7 @@ export function buildSetOrderComponents(
 
   if (currentOrder.length > 0) {
     const resetBtn = new ButtonBuilder()
-      .setCustomId(`draft_setorder_reset:${sessionId}`)
+      .setCustomId(`${CustomId.DraftSetOrderReset}:${sessionId}`)
       .setLabel("Reset")
       .setStyle(ButtonStyle.Danger);
     rows.push(

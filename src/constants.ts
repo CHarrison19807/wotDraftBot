@@ -18,6 +18,12 @@ const West = MapSide.West;
 
 export const WG_API_BASE = "https://api.worldoftanks.com";
 
+export const CustomId = {
+  DraftSetOrderConfirm: "draft_setorder_confirm",
+  DraftSetOrderReset: "draft_setorder_reset",
+  DraftSetOrderMenu: "draft_setorder_menu",
+} as const;
+
 export interface WorldOfTanksMap {
   name: WorldOfTanksMapName;
   sideOptions: MapSide[];
