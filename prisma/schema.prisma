@@ -53,6 +53,19 @@ enum PickBanStatus {
   Complete
 }
 
+enum DraftType {
+  Snake
+  Regular
+  Auction
+}
+
+enum DraftStatus {
+  Lobby
+  Active
+  Complete
+  Cancelled
+}
+
 model GuildConfig {
   guildId                  String  @id
   pickBanResultsChannelId  String?
@@ -74,6 +87,59 @@ model PickBanState {
   actions                    PickBanAction[]
   createdAt                  DateTime      @default(now())
   updatedAt                  DateTime      @updatedAt
+}
+
+model PlayerDraftSession {
+  id                    String        @id @default(cuid())
+  guildId               String
+  channelId             String
+  numTeams              Int
+  maxPlayersPerTeam     Int
+  draftType             DraftType
+  status                DraftStatus   @default(Lobby)
+  currentPickIndex      Int           @default(0)
+  draftMessageId        String?
+  captainsChatChannelId String?
+  createdChannelIds     String[]      @default([])
+  teams                 DraftTeam[]
+  players               DraftPlayer[]
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+}
+
+model DraftTeam {
+  id             Int                @id @default(autoincrement())
+  session        PlayerDraftSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId      String
+  name           String             
+  captainId      String             
+  pickOrder      Int?               
+  channelId      String?            
+  voiceChannelId String?           
+  players        DraftPlayer[]
+
+  @@unique([sessionId, pickOrder])
+  @@unique([sessionId, name])
+  @@unique([sessionId, captainId])
+}
+
+model DraftPlayer {
+  id               Int                @id @default(autoincrement())
+  session          PlayerDraftSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId        String
+  discordUsername  String
+  discordUserId    String             
+  worldOfTanksId   String
+  isCaptain        Boolean            @default(false)
+  isLegionnaire    Boolean            @default(false)
+  wotAccountRegion String
+  team             DraftTeam?         @relation(fields: [teamId], references: [id], onDelete: Restrict)
+  teamId           Int?               
+  pickNumber       Int?              
+
+  @@unique([sessionId, worldOfTanksId])
+  @@unique([sessionId, discordUsername])
+  @@unique([sessionId, pickNumber])
 }
 
 model PickBanAction {
