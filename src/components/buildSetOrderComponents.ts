@@ -7,7 +7,7 @@ import {
 } from "discord.js";
 import { CustomId } from "../constants";
 
-export interface CaptainInfo {
+interface CaptainInfo {
   userId: string;
   username: string;
 }
@@ -18,23 +18,25 @@ export function buildSetOrderComponents(
   currentOrder: string[],
 ): ActionRowBuilder<MessageActionRowComponentBuilder>[] {
   const placed = new Set(currentOrder);
-  const remaining = allCaptains.filter((c) => !placed.has(c.userId));
+  const remaining = allCaptains.filter((captain) => !placed.has(captain.userId));
   const rows: ActionRowBuilder<MessageActionRowComponentBuilder>[] = [];
 
+  const resetButton = new ButtonBuilder()
+    .setCustomId(`${CustomId.DraftSetOrderReset}:${sessionId}`)
+    .setLabel("Reset")
+    .setStyle(ButtonStyle.Danger);
+
+  const confirmButton = new ButtonBuilder()
+    .setCustomId(`${CustomId.DraftSetOrderConfirm}:${sessionId}`)
+    .setLabel("Confirm Order")
+    .setStyle(ButtonStyle.Success);
+
+  // All captains placed - show confirm + reset in one row
   if (remaining.length === 0) {
-    // All captains placed - show confirm + reset in one row
-    const confirmBtn = new ButtonBuilder()
-      .setCustomId(`${CustomId.DraftSetOrderConfirm}:${sessionId}`)
-      .setLabel("Confirm Order")
-      .setStyle(ButtonStyle.Success);
-    const resetBtn = new ButtonBuilder()
-      .setCustomId(`${CustomId.DraftSetOrderReset}:${sessionId}`)
-      .setLabel("Reset")
-      .setStyle(ButtonStyle.Danger);
     rows.push(
       new ActionRowBuilder<ButtonBuilder>().addComponents(
-        confirmBtn,
-        resetBtn,
+        confirmButton,
+        resetButton,
       ) as ActionRowBuilder<MessageActionRowComponentBuilder>,
     );
     return rows;
@@ -45,11 +47,12 @@ export function buildSetOrderComponents(
     .setCustomId(`${CustomId.DraftSetOrderMenu}:${sessionId}`)
     .setPlaceholder(`Select captain for pick slot #${currentOrder.length + 1}`)
     .addOptions(
-      remaining.map((c) => ({
-        label: c.username,
-        value: c.userId,
+      remaining.map((captain) => ({
+        label: captain.username,
+        value: captain.userId,
       })),
     );
+
   rows.push(
     new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
       menu,
@@ -57,13 +60,9 @@ export function buildSetOrderComponents(
   );
 
   if (currentOrder.length > 0) {
-    const resetBtn = new ButtonBuilder()
-      .setCustomId(`${CustomId.DraftSetOrderReset}:${sessionId}`)
-      .setLabel("Reset")
-      .setStyle(ButtonStyle.Danger);
     rows.push(
       new ActionRowBuilder<ButtonBuilder>().addComponents(
-        resetBtn,
+        resetButton,
       ) as ActionRowBuilder<MessageActionRowComponentBuilder>,
     );
   }
@@ -72,6 +71,8 @@ export function buildSetOrderComponents(
 }
 
 export function buildSetOrderContent(allCaptains: CaptainInfo[], currentOrder: string[]): string {
+  const placed = new Set(currentOrder);
+  const remaining = allCaptains.filter((captain) => !placed.has(captain.userId));
   const lines: string[] = ["**Set Captain Pick Order**", ""];
 
   if (currentOrder.length === 0) {
@@ -79,12 +80,9 @@ export function buildSetOrderContent(allCaptains: CaptainInfo[], currentOrder: s
   } else {
     lines.push("**Current order:**");
     for (let i = 0; i < currentOrder.length; i++) {
-      const captain = allCaptains.find((c) => c.userId === currentOrder[i]);
+      const captain = allCaptains.find((captain) => captain.userId === currentOrder[i]);
       lines.push(`${i + 1}. <@${currentOrder[i]}>${captain ? ` (${captain.username})` : ""}`);
     }
-
-    const placed = new Set(currentOrder);
-    const remaining = allCaptains.filter((c) => !placed.has(c.userId));
 
     lines.push("");
     if (remaining.length > 0) {

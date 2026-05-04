@@ -1,19 +1,55 @@
+import { rosterFalsyValues, rosterTruthyValues, validRegions } from "../../constants";
 import type { RosterRow } from "./parseRoster";
 
-const VALID_REGIONS = new Set(["na", "eu", "asia"]);
+export function isTruthy(value: string): boolean {
+  return rosterTruthyValues.has(value.toLowerCase());
+}
 
-export function validateRoster(players: RosterRow[], numTeams: number): string[] {
+export function isFalsy(value: string): boolean {
+  return rosterFalsyValues.has(value.toLowerCase());
+}
+
+export function validateRoster(rows: RosterRow[], numTeams: number, maxPlayersPerTeam: number): string[] {
   const errors: string[] = [];
 
-  for (const player of players) {
-    if (player.wotAccountRegion && !VALID_REGIONS.has(player.wotAccountRegion)) {
-      errors.push(`"${player.discordUsername}": invalid region "${player.wotAccountRegion}" - expected NA/EU/RU/ASIA`);
+  for (const row of rows) {
+    const { discordUsername, worldOfTanksId, isCaptain, isLegionnaire, wotAccountRegion } = row;
+    const rowNumber = rows.indexOf(row) + 2; // +2 to account for header and 0-indexing
+    const errorPrefix = `Row ${rowNumber}:`;
+
+    if (!discordUsername) {
+      errors.push(`${errorPrefix} Missing value for \`Discord Username\`.`);
+    }
+
+    if (!worldOfTanksId) {
+      errors.push(`${errorPrefix} Missing value for \`World of Tanks ID\`.`);
+    }
+
+    if (!isFalsy(isCaptain) && !isTruthy(isCaptain)) {
+      errors.push(`${errorPrefix} Invalid value for \`Is Captain\`.`);
+    }
+
+    if (!isFalsy(isLegionnaire) && !isTruthy(isLegionnaire)) {
+      errors.push(`${errorPrefix} Invalid value for \`Is Legionnaire\`.`);
+    }
+
+    if (!wotAccountRegion) {
+      errors.push(`${errorPrefix} Missing value for \`WoT Account Region\`.`);
+    } else if (!validRegions.has(wotAccountRegion)) {
+      errors.push(
+        `${errorPrefix} Invalid value for \`WoT Account Region\`. Must be one of: ${[...validRegions].join(", ")}.`,
+      );
     }
   }
 
-  const captainCount = players.filter((p) => p.isCaptain).length;
-  if (captainCount !== numTeams) {
-    errors.push(`Expected ${numTeams} captain${numTeams !== 1 ? "s" : ""}, but found ${captainCount}`);
+  const captains = rows.filter((r) => isTruthy(r.isCaptain));
+  const expectedNumPlayers = numTeams * maxPlayersPerTeam;
+  if (captains.length !== numTeams) {
+    errors.push(`There must be exactly ${numTeams} captains, but ${captains.length} were found.`);
+  }
+
+  if (rows.length !== expectedNumPlayers) {
+    errors.push(`There must be exactly ${expectedNumPlayers} players, but ${rows.length} were found.`);
   }
 
   return errors;

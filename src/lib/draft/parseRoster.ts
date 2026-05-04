@@ -3,64 +3,58 @@ import { parse } from "csv-parse/sync";
 export interface RosterRow {
   discordUsername: string;
   worldOfTanksId: string;
-  isCaptain: boolean;
-  isLegionnaire: boolean;
+  isCaptain: string;
+  isLegionnaire: string;
   wotAccountRegion: string;
 }
 
 export interface ParseRosterResult {
-  players: RosterRow[];
+  rows: RosterRow[];
   errors: string[];
 }
 
-const TRUTHY = new Set(["true", "1", "yes"]);
-function parseBool(raw: string): boolean {
-  return TRUTHY.has(raw.trim().toLowerCase());
+const REQUIRED_COLUMNS = ["Discord Username", "WoT ID", "Is Captain", "Is Legionnaire", "WoT Account Region"];
+
+function cleanField(value: string | undefined): string {
+  return (value ?? "").trim().toLowerCase();
 }
 
 export function parseRoster(csvContent: string): ParseRosterResult {
-  const errors: string[] = [];
-
-  let rows: Record<string, string>[];
+  let rawRows: Record<string, string>[];
   try {
-    rows = parse(csvContent, {
+    rawRows = parse(csvContent, {
       columns: true,
       skip_empty_lines: true,
       trim: true,
       bom: true,
-    }) as Record<string, string>[];
+    });
   } catch (err) {
     return {
-      players: [],
+      rows: [],
       errors: [`Failed to parse CSV: ${err instanceof Error ? err.message : String(err)}`],
     };
   }
 
-  const players: RosterRow[] = [];
-
-  let rowNum = 2; // 1-indexed, row 1 is the header
-  for (const row of rows) {
-    const discordUsername = (row["Discord Username"] ?? "").trim();
-    const worldOfTanksId = (row["WoT ID"] ?? "").trim();
-    const rowErrors: string[] = [];
-
-    if (!discordUsername) rowErrors.push('missing "Discord Username"');
-    if (!worldOfTanksId) rowErrors.push('missing "WoT ID"');
-
-    if (rowErrors.length > 0) {
-      errors.push(`Row ${rowNum}: ${rowErrors.join(", ")}`);
-    } else {
-      players.push({
-        discordUsername,
-        worldOfTanksId,
-        isCaptain: parseBool(row["Is Captain"] ?? ""),
-        isLegionnaire: parseBool(row["Is Legionnaire"] ?? ""),
-        wotAccountRegion: (row["WoT Account Region"] ?? "").trim().toLowerCase(),
-      });
-    }
-
-    rowNum++;
+  if (rawRows.length === 0) {
+    return { rows: [], errors: [] };
   }
 
-  return { players, errors };
+  const presentColumns = Object.keys(rawRows[0] ?? {});
+  const missingColumns = REQUIRED_COLUMNS.filter((col) => !presentColumns.includes(col));
+  if (missingColumns.length > 0) {
+    return {
+      rows: [],
+      errors: [`CSV is missing required columns: ${missingColumns.map((column) => `\`${column}\``).join(", ")}`],
+    };
+  }
+
+  const rows: RosterRow[] = rawRows.map((row) => ({
+    discordUsername: cleanField(row["Discord Username"]),
+    worldOfTanksId: cleanField(row["WoT ID"]),
+    isCaptain: cleanField(row["Is Captain"]),
+    isLegionnaire: cleanField(row["Is Legionnaire"]),
+    wotAccountRegion: cleanField(row["WoT Account Region"]),
+  }));
+
+  return { rows, errors: [] };
 }

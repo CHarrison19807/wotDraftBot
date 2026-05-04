@@ -17,11 +17,15 @@ const East = MapSide.East;
 const West = MapSide.West;
 
 export const WG_API_BASE = "https://api.worldoftanks.com";
+export const rosterTruthyValues = new Set(["yes", "true", "1"]);
+export const rosterFalsyValues = new Set(["no", "false", "0", ""]);
+export const validRegions = new Set(["na", "eu", "asia"]);
 
 export const CustomId = {
   DraftSetOrderConfirm: "draft_setorder_confirm",
   DraftSetOrderReset: "draft_setorder_reset",
   DraftSetOrderMenu: "draft_setorder_menu",
+  DraftPickConfirm: "draft_pick_confirm",
 } as const;
 
 export interface WorldOfTanksMap {
