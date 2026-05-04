@@ -60,7 +60,6 @@ enum DraftType {
 }
 
 enum DraftStatus {
-  Setup
   Active
   Complete
   Cancelled
@@ -96,7 +95,7 @@ model PlayerDraftSession {
   numTeams              Int
   maxPlayersPerTeam     Int
   draftType             DraftType
-  status                DraftStatus   @default(Setup)
+  status                DraftStatus   @default(Active)
   currentPickIndex      Int           @default(0)
   draftMessageId        String?
   captainsChatChannelId String?
