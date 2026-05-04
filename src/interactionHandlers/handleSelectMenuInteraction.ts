@@ -1,6 +1,6 @@
-import { type StringSelectMenuInteraction } from "discord.js";
+import type { StringSelectMenuInteraction } from "discord.js";
 import { buildSetOrderComponents, buildSetOrderContent } from "../components/buildSetOrderComponents";
-import { getActiveDraftSession } from "../db/draftSession";
+import { getSetupDraftSession } from "../db/draftSession";
 import { getSetOrder, updateSetOrder } from "../lib/draft/setOrderState";
 
 function parseSessionId(customId: string): string | null {
@@ -12,7 +12,7 @@ export async function handleSetOrderMenu(interaction: StringSelectMenuInteractio
   const sessionId = parseSessionId(interaction.customId);
   if (!sessionId || !interaction.guildId) return;
 
-  const session = await getActiveDraftSession(interaction.guildId);
+  const session = await getSetupDraftSession(interaction.guildId);
   if (!session || session.id !== sessionId) {
     await interaction.reply({ content: "This session is no longer active." });
     return;

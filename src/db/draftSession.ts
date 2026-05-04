@@ -1,9 +1,19 @@
 import { DraftStatus, type DraftType } from "../generated/prisma/client";
 import { prisma } from "../lib/prisma";
 
+export async function getSetupDraftSession(guildId: string) {
+  return prisma.playerDraftSession.findFirst({
+    where: { guildId, status: DraftStatus.Setup },
+    include: {
+      teams: { orderBy: { pickOrder: "asc" } },
+      players: true,
+    },
+  });
+}
+
 export async function getActiveDraftSession(guildId: string) {
   return prisma.playerDraftSession.findFirst({
-    where: { guildId, status: { in: [DraftStatus.Lobby, DraftStatus.Active] } },
+    where: { guildId, status: DraftStatus.Active },
     include: {
       teams: { orderBy: { pickOrder: "asc" } },
       players: true,
@@ -38,10 +48,7 @@ export async function createDraftSessionWithPlayers(
 ) {
   return prisma.$transaction(async (tx) => {
     const existing = await tx.playerDraftSession.findFirst({
-      where: {
-        guildId: sessionData.guildId,
-        status: { in: [DraftStatus.Lobby, DraftStatus.Active] },
-      },
+      where: { guildId: sessionData.guildId, status: { in: [DraftStatus.Setup, DraftStatus.Active] } },
     });
     if (existing) throw new Error("An active draft session already exists in this guild.");
 

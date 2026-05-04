@@ -1,8 +1,8 @@
 import "dotenv/config";
 import { Client, Events, GatewayIntentBits } from "discord.js";
+import { CustomId } from "./constants";
 import { upsertGuildConfig } from "./db/guildConfig";
 import { deleteOrphanedPickBanState } from "./db/pickBanState";
-import { CustomId } from "./constants";
 import { handleButton } from "./interactionHandlers/buttons";
 import { handleSetOrderMenu } from "./interactionHandlers/handleSelectMenuInteraction";
 import { handleSlashCommand } from "./interactionHandlers/handleSlashCommand";

@@ -1,6 +1,6 @@
 import { type ButtonInteraction, MessageFlags } from "discord.js";
 import { buildSetOrderComponents, buildSetOrderContent } from "../../components/buildSetOrderComponents";
-import { getActiveDraftSession, setTeamPickOrders } from "../../db/draftSession";
+import { getSetupDraftSession, setTeamPickOrders } from "../../db/draftSession";
 import { clearSetOrder, getSetOrder, updateSetOrder } from "../../lib/draft/setOrderState";
 
 function parseSessionId(customId: string): string | null {
@@ -12,7 +12,7 @@ export async function handleSetOrderConfirm(interaction: ButtonInteraction) {
   const sessionId = parseSessionId(interaction.customId);
   if (!sessionId || !interaction.guildId) return;
 
-  const session = await getActiveDraftSession(interaction.guildId);
+  const session = await getSetupDraftSession(interaction.guildId);
   if (!session || session.id !== sessionId) {
     await interaction.update({ content: "This session is no longer active.", components: [] });
     return;
@@ -58,7 +58,7 @@ export async function handleSetOrderReset(interaction: ButtonInteraction) {
   const sessionId = parseSessionId(interaction.customId);
   if (!sessionId || !interaction.guildId) return;
 
-  const session = await getActiveDraftSession(interaction.guildId);
+  const session = await getSetupDraftSession(interaction.guildId);
   if (!session || session.id !== sessionId) {
     await interaction.update({ content: "This session is no longer active.", components: [] });
     return;
