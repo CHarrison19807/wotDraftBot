@@ -17,6 +17,7 @@ const East = MapSide.East;
 const West = MapSide.West;
 
 export const WG_API_BASE = "https://api.worldoftanks.com";
+export const TOMATO_GG_BASE = "https://tomato.gg";
 export const rosterTruthyValues = new Set(["yes", "true", "1"]);
 export const rosterFalsyValues = new Set(["no", "false", "0", ""]);
 export const validRegions = new Set(["na", "eu", "asia"]);
