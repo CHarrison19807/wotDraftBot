@@ -3,6 +3,7 @@ import { DraftType } from "../../generated/prisma/client";
 import { verifyInteraction } from "../../lib/verifyInteraction";
 import { executeCancel } from "./cancel";
 import { executeInit } from "./init";
+import { executePick } from "./pick";
 import { executeSetOrder } from "./setorder";
 import { executeStart } from "./start";
 
@@ -11,23 +12,25 @@ const Subcommand = {
   SetOrder: "setorder",
   Cancel: "cancel",
   Start: "start",
+  Pick: "pick",
 } as const;
+
+const ADMIN_SUBCOMMANDS = new Set([Subcommand.Init, Subcommand.SetOrder, Subcommand.Cancel, Subcommand.Start]);
 
 export const data = new SlashCommandBuilder()
   .setName("draft")
   .setDescription("Player draft commands")
-  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addSubcommand((sub) =>
     sub
       .setName(Subcommand.Init)
       .setDescription("Initialize a new draft session from a roster CSV")
       .addIntegerOption((opt) =>
-        opt.setName("num_teams").setDescription("Number of teams").setRequired(true).setMinValue(2).setMaxValue(10),
+        opt.setName("num_teams").setDescription("Number of teams").setRequired(true).setMinValue(2),
       )
       .addIntegerOption((opt) =>
         opt
-          .setName("max_players_per_team")
-          .setDescription("Maximum players per team")
+          .setName("num_players_per_team")
+          .setDescription("Number of players per team")
           .setRequired(true)
           .setMinValue(1)
           .setMaxValue(18),
@@ -42,6 +45,7 @@ export const data = new SlashCommandBuilder()
       .addAttachmentOption((opt) =>
         opt
           .setName("roster")
+          // TODO write readme section
           .setDescription('Roster CSV, see the "Roster CSV Format" section of the README for details')
           .setRequired(true),
       ),
@@ -53,6 +57,11 @@ export const data = new SlashCommandBuilder()
   .addSubcommand((sub) =>
     sub.setName(Subcommand.Start).setDescription("Start the active draft session and create team channels"),
   )
+  .addSubcommand((sub) =>
+    sub
+      .setName(Subcommand.Pick)
+      .setDescription("Pick a player for your team")
+      .addUserOption((opt) => opt.setName("player").setDescription("The player to pick").setRequired(true)),
   );
 
 export const execute = async (interaction: ChatInputCommandInteraction) => {
@@ -65,8 +74,19 @@ export const execute = async (interaction: ChatInputCommandInteraction) => {
   const { interaction: verifiedInteraction } = result;
   const subcommand = verifiedInteraction.options.getSubcommand();
 
+  if (subcommand in ADMIN_SUBCOMMANDS) {
+    if (!verifiedInteraction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
+      await verifiedInteraction.reply({
+        content: "You need Administrator permission to use this command.",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+  }
+
   if (subcommand === Subcommand.Init) return executeInit(verifiedInteraction);
   if (subcommand === Subcommand.SetOrder) return executeSetOrder(verifiedInteraction);
   if (subcommand === Subcommand.Cancel) return executeCancel(verifiedInteraction);
   if (subcommand === Subcommand.Start) return executeStart(verifiedInteraction);
+  if (subcommand === Subcommand.Pick) return executePick(verifiedInteraction);
 };

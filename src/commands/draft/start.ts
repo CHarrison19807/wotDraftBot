@@ -53,7 +53,7 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
       ChannelType.GuildText,
       category.id,
       captains.map((player) => ({ id: player.discordUserId, type: OverwriteType.Member })),
-      true
+      true,
     );
     createdChannelIds.push(draftChannelId);
 
@@ -106,6 +106,16 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
     }
     return;
   }
+
+  const draftChannel = await guild.channels.fetch(draftChannelId);
+
+  if (!draftChannel?.isTextBased()) {
+    await interaction.editReply("Channels created, but failed to locate the draft channel to post the embed.");
+    return;
+  }
+
+  const draftMessage = await draftChannel.send({ embeds: [buildDraftEmbed(session)] });
+  await startDraftSession(session.id, draftChannel.id, draftMessage.id);
 
   await interaction.editReply(`Draft started! Check <#${draftChannelId}>.`);
 }

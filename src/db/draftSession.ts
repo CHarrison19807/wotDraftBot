@@ -1,9 +1,10 @@
-import { DraftStatus, type DraftType } from "../generated/prisma/client";
+import { Status, type DraftType } from "../generated/prisma/client";
+import { totalDraftPicks } from "../lib/draft/getDraftTurn";
 import { prisma } from "../lib/prisma";
 
 export async function getActiveDraftSession(guildId: string) {
   return prisma.playerDraftSession.findFirst({
-    where: { guildId, status: DraftStatus.Active },
+    where: { guildId, status: Status.Active },
     include: {
       teams: { orderBy: { pickOrder: "asc" } },
       players: true,
@@ -16,7 +17,7 @@ export async function createDraftSessionWithPlayers(
     guildId: string;
     channelId: string;
     numTeams: number;
-    maxPlayersPerTeam: number;
+    numPlayersPerTeam: number;
     draftType: DraftType;
     captainsChatChannelId?: string;
     createdChannelIds?: string[];
@@ -38,7 +39,7 @@ export async function createDraftSessionWithPlayers(
 ) {
   return prisma.$transaction(async (tx) => {
     const existing = await tx.playerDraftSession.findFirst({
-      where: { guildId: sessionData.guildId, status: DraftStatus.Active },
+      where: { guildId: sessionData.guildId, status: Status.Active },
     });
     if (existing) throw new Error("A draft session already exists in this guild.");
 
@@ -67,9 +68,61 @@ export async function setTeamPickOrders(sessionId: string, orders: { captainId: 
   );
 }
 
+export async function startDraftSession(sessionId: string, draftChannelId: string, draftMessageId: string) {
+  return prisma.$transaction(async (tx) => {
+    const session = await tx.playerDraftSession.findUnique({
+      where: { id: sessionId },
+      include: { teams: true, players: { where: { isCaptain: true } } },
+    });
+    if (!session) throw new Error("Session not found");
+
+    for (const team of session.teams) {
+      const captain = session.players.find((p) => p.discordUserId === team.captainId);
+      if (captain) {
+        await tx.draftPlayer.update({ where: { id: captain.id }, data: { teamId: team.id } });
+      }
+    }
+
+    return tx.playerDraftSession.update({
+      where: { id: sessionId },
+      data: { draftChannelId, draftMessageId },
+    });
+  });
+}
+
+export async function recordPick(sessionId: string, playerId: number, teamId: number) {
+  return prisma.$transaction(async (tx) => {
+    const session = await tx.playerDraftSession.findUnique({
+      where: { id: sessionId },
+      select: { currentPickIndex: true, numTeams: true, numPlayersPerTeam: true },
+    });
+    if (!session) throw new Error("Session not found");
+
+    const newPickIndex = session.currentPickIndex + 1;
+    const isComplete = newPickIndex >= totalDraftPicks(session.numTeams, session.numPlayersPerTeam);
+
+    await tx.draftPlayer.update({
+      where: { id: playerId },
+      data: { teamId, pickNumber: session.currentPickIndex + 1 },
+    });
+
+    return tx.playerDraftSession.update({
+      where: { id: sessionId },
+      data: {
+        currentPickIndex: newPickIndex,
+        ...(isComplete && { status: Status.Complete }),
+      },
+      include: {
+        teams: { orderBy: { pickOrder: "asc" } },
+        players: true,
+      },
+    });
+  });
+}
+
 export async function cancelDraftSession(sessionId: string) {
   return prisma.playerDraftSession.update({
-    where: { id: sessionId, status: { not: { in: [DraftStatus.Cancelled, DraftStatus.Complete] } } },
-    data: { status: DraftStatus.Cancelled },
+    where: { id: sessionId, status: { not: { in: [Status.Cancelled, Status.Complete] } } },
+    data: { status: Status.Cancelled },
   });
 }

@@ -1,5 +1,6 @@
 import { type ButtonInteraction, MessageFlags } from "discord.js";
 import { CustomId } from "../../constants";
+import { handleDraftPickConfirm } from "./handleDraftPickButtons";
 import { handlePickBanButton } from "./handlePickBanButtons";
 import { handleSetOrderConfirm, handleSetOrderReset } from "./handleSetOrderButtons";
 
@@ -15,7 +16,9 @@ export async function handleButton(interaction: ButtonInteraction) {
 
   processingChannels.add(channelId);
   try {
-    if (interaction.customId.startsWith(`${CustomId.DraftSetOrderConfirm}:`)) {
+    if (interaction.customId.startsWith(`${CustomId.DraftPickConfirm}:`)) {
+      await handleDraftPickConfirm(interaction);
+    } else if (interaction.customId.startsWith(`${CustomId.DraftSetOrderConfirm}:`)) {
       await handleSetOrderConfirm(interaction);
     } else if (interaction.customId.startsWith(`${CustomId.DraftSetOrderReset}:`)) {
       await handleSetOrderReset(interaction);
