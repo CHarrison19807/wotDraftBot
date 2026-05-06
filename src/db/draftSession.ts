@@ -1,4 +1,4 @@
-import { Status, type DraftType } from "../generated/prisma/client";
+import { type DraftType, Status } from "../generated/prisma/client";
 import { totalDraftPicks } from "../lib/draft/getDraftTurn";
 import { prisma } from "../lib/prisma";
 

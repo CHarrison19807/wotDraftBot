@@ -1,7 +1,7 @@
 import type { ButtonInteraction } from "discord.js";
 import { PICK_BAN_CONFIGS } from "../constants";
 import { recordActionAndAdvanceStep } from "../db/pickBanAction";
-import { Status, PickBanStepAction } from "../generated/prisma/client";
+import { PickBanStepAction, Status } from "../generated/prisma/client";
 import { isMapSide, isWorldOfTanksMapName } from "../lib/guards";
 import type { StateWithActions } from "../types";
 

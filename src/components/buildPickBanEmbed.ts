@@ -1,6 +1,6 @@
 import { EmbedBuilder } from "discord.js";
 import { PICK_BAN_CONFIGS } from "../constants";
-import { ActingTeam, Status, PickBanStepAction } from "../generated/prisma/client";
+import { ActingTeam, PickBanStepAction, Status } from "../generated/prisma/client";
 import { formatMapName } from "../lib/pickban/formatMapName";
 import type { StateWithActions } from "../types";
 

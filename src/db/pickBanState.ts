@@ -1,4 +1,4 @@
-import { Status, type Prisma } from "../generated/prisma/client";
+import { type Prisma, Status } from "../generated/prisma/client";
 import { prisma } from "../lib/prisma";
 
 export async function cancelPickBanState(channelId: string) {

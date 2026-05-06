@@ -1,4 +1,4 @@
-import { Status, DraftType } from "../../generated/prisma/client";
+import { DraftType, Status } from "../../generated/prisma/client";
 
 export function getCurrentTeamIndex(currentPickIndex: number, numTeams: number, draftType: DraftType): number {
   if (draftType === DraftType.Snake) {

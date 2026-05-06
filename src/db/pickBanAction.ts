@@ -1,4 +1,4 @@
-import { Status, type Prisma, type WorldOfTanksMapName } from "../generated/prisma/client";
+import { type Prisma, Status, type WorldOfTanksMapName } from "../generated/prisma/client";
 import { prisma } from "../lib/prisma";
 import type { StateWithActions } from "../types";
 
