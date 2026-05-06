@@ -47,7 +47,7 @@ enum PickBanFormat {
   Bo11
 }
 
-enum PickBanStatus {
+enum Status {
   Active
   Cancelled
   Complete
@@ -57,12 +57,6 @@ enum DraftType {
   Snake
   Regular
   Auction
-}
-
-enum DraftStatus {
-  Active
-  Complete
-  Cancelled
 }
 
 model GuildConfig {
@@ -80,8 +74,8 @@ model PickBanState {
   availableMaps              WorldOfTanksMapName[]
   deciderMap                 WorldOfTanksMapName?
   currentStepIndex           Int           @default(0)
-  status                     PickBanStatus @default(Active)
-  draftMessageId             String
+  status                     Status @default(Active)
+  pickBanMessageId           String
   turnNotificationMessageId  String?
   actions                    PickBanAction[]
   createdAt                  DateTime      @default(now())
@@ -91,15 +85,13 @@ model PickBanState {
 model PlayerDraftSession {
   id                    String        @id @default(cuid())
   guildId               String
-  channelId             String
   numTeams              Int
-  maxPlayersPerTeam     Int
+  numPlayersPerTeam     Int
   draftType             DraftType
-  status                DraftStatus   @default(Active)
+  status                Status   @default(Active)
   currentPickIndex      Int           @default(0)
   draftMessageId        String?
-  captainsChatChannelId String?
-  createdChannelIds     String[]      @default([])
+  draftChannelId        String?
   teams                 DraftTeam[]
   players               DraftPlayer[]
   createdAt             DateTime      @default(now())
@@ -110,9 +102,12 @@ model DraftTeam {
   id             Int                @id @default(autoincrement())
   session        PlayerDraftSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   sessionId      String
-  name           String             
+  name           String  
+
+  // TODO rename to captainDiscordId or something           
   captainId      String             
-  pickOrder      Int?               
+  pickOrder      Int? 
+  // TODO textChannelId              
   channelId      String?            
   voiceChannelId String?           
   players        DraftPlayer[]

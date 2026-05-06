@@ -12,7 +12,7 @@ export async function executeInit(interaction: GuildChatInputCommandInteraction)
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   const numTeams = interaction.options.getInteger("num_teams", true);
-  const maxPlayersPerTeam = interaction.options.getInteger("max_players_per_team", true);
+  const numPlayersPerTeam = interaction.options.getInteger("num_players_per_team", true);
   const draftType = interaction.options.getString("draft_type", true);
 
   if (!isDraftType(draftType)) {
@@ -45,7 +45,7 @@ export async function executeInit(interaction: GuildChatInputCommandInteraction)
     return;
   }
 
-  const validationErrors = validateRoster(rosterRows, numTeams, maxPlayersPerTeam);
+  const validationErrors = validateRoster(rosterRows, numTeams, numPlayersPerTeam);
   if (validationErrors.length > 0) {
     await interaction.editReply(
       truncateReply(`Roster validation errors:\n${validationErrors.map((e) => `- ${e}`).join("\n")}`),
@@ -70,7 +70,7 @@ export async function executeInit(interaction: GuildChatInputCommandInteraction)
   }));
 
   await createDraftSessionWithPlayers(
-    { guildId: interaction.guild.id, channelId: interaction.channelId, numTeams, maxPlayersPerTeam, draftType },
+    { guildId: interaction.guild.id, channelId: interaction.channelId, numTeams, numPlayersPerTeam, draftType },
     resolved,
     teamData,
   );

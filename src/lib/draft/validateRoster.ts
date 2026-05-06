@@ -9,7 +9,7 @@ export function isFalsy(value: string): boolean {
   return rosterFalsyValues.has(value.toLowerCase());
 }
 
-export function validateRoster(rows: RosterRow[], numTeams: number, maxPlayersPerTeam: number): string[] {
+export function validateRoster(rows: RosterRow[], numTeams: number, numPlayersPerTeam: number): string[] {
   const errors: string[] = [];
 
   for (const row of rows) {
@@ -43,7 +43,7 @@ export function validateRoster(rows: RosterRow[], numTeams: number, maxPlayersPe
   }
 
   const captains = rows.filter((r) => isTruthy(r.isCaptain));
-  const expectedNumPlayers = numTeams * maxPlayersPerTeam;
+  const expectedNumPlayers = numTeams * numPlayersPerTeam;
   if (captains.length !== numTeams) {
     errors.push(`There must be exactly ${numTeams} captains, but ${captains.length} were found.`);
   }

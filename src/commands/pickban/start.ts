@@ -114,7 +114,7 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
   }
 
   try {
-    const draftMessage = await channel.send({ content: "Initializing pick/ban session..." });
+    const pickBanMessage = await channel.send({ content: "Initializing pick/ban session..." });
 
     await createPickBanState({
       channelId: channel.id,
@@ -123,7 +123,7 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
       teamACaptainId: captainA.id,
       teamBCaptainId: captainB.id,
       availableMaps: MAP_POOL.map((map) => map.name),
-      draftMessageId: draftMessage.id,
+      pickBanMessageId: pickBanMessage.id,
     });
 
     const newState = await getPickBanState(channel.id);
@@ -133,7 +133,7 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
       return;
     }
 
-    await draftMessage.edit({
+    await pickBanMessage.edit({
       content: null,
       embeds: [buildPickBanEmbed(newState)],
       components: buildPickBanButtons(newState),

@@ -1,6 +1,6 @@
 import { EmbedBuilder } from "discord.js";
 import { PICK_BAN_CONFIGS } from "../constants";
-import { ActingTeam, PickBanStatus, PickBanStepAction } from "../generated/prisma/client";
+import { ActingTeam, Status, PickBanStepAction } from "../generated/prisma/client";
 import { formatMapName } from "../lib/pickban/formatMapName";
 import type { StateWithActions } from "../types";
 
@@ -16,7 +16,7 @@ export function buildPickBanEmbed(pickBanState: StateWithActions): EmbedBuilder 
   }
 
   const currentStep = steps[pickBanState.currentStepIndex];
-  const isComplete = pickBanState.status === PickBanStatus.Complete;
+  const isComplete = pickBanState.status === Status.Complete;
   const actions = pickBanState.actions;
 
   // Build table rows, merging MapPick + SidePick into one row

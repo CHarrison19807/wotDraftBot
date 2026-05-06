@@ -1,4 +1,4 @@
-import { PickBanStatus, type Prisma, type WorldOfTanksMapName } from "../generated/prisma/client";
+import { Status, type Prisma, type WorldOfTanksMapName } from "../generated/prisma/client";
 import { prisma } from "../lib/prisma";
 import type { StateWithActions } from "../types";
 
@@ -11,7 +11,7 @@ export async function recordActionAndAdvanceStep(
   const [, updatedState] = await prisma.$transaction([
     prisma.pickBanAction.create({ data: actionData }),
     prisma.pickBanState.update({
-      where: { id: stateId, status: PickBanStatus.Active },
+      where: { id: stateId, status: Status.Active },
       data: { currentStepIndex: nextStepIndex, availableMaps },
       include: { actions: { orderBy: { id: "asc" } } },
     }),
@@ -22,7 +22,7 @@ export async function recordActionAndAdvanceStep(
 export async function completePickBanState(id: string, deciderMap: WorldOfTanksMapName): Promise<StateWithActions> {
   return prisma.pickBanState.update({
     where: { id },
-    data: { status: PickBanStatus.Complete, availableMaps: [], deciderMap },
+    data: { status: Status.Complete, availableMaps: [], deciderMap },
     include: { actions: { orderBy: { id: "asc" } } },
   });
 }

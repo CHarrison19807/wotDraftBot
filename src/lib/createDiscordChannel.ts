@@ -29,7 +29,7 @@ export async function createDiscordChannel(
   channelType: ChannelType.GuildText | ChannelType.GuildVoice,
   categoryId: string,
   idsWithAccess: { id: string; type: OverwriteType }[],
-  isPrivate: boolean = false,
+  isPrivate = false,
 ): Promise<string> {
   const isVoice = channelType === ChannelType.GuildVoice;
   const memberAllow = isVoice ? VOICE_ALLOW : TEXT_ALLOW;

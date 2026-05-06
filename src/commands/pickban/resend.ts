@@ -40,12 +40,12 @@ export async function executeResend(interaction: GuildChatInputCommandInteractio
     return;
   }
 
-  const { draftMessageId } = state;
+  const { pickBanMessageId } = state;
 
-  const draftMessage = await interaction.channel.messages.fetch(draftMessageId).catch(() => null);
+  const pickBanMessage = await interaction.channel.messages.fetch(pickBanMessageId).catch(() => null);
 
-  if (draftMessage) {
-    await draftMessage.delete().catch(() => null);
+  if (pickBanMessage) {
+    await pickBanMessage.delete().catch(() => null);
   }
 
   const newDraftMessage = await interaction.channel.send({
