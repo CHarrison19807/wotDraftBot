@@ -15,12 +15,9 @@ export async function getActiveDraftSession(guildId: string) {
 export async function createDraftSessionWithPlayers(
   sessionData: {
     guildId: string;
-    channelId: string;
     numTeams: number;
     numPlayersPerTeam: number;
     draftType: DraftType;
-    captainsChatChannelId?: string;
-    createdChannelIds?: string[];
   },
   players: {
     discordUsername: string;

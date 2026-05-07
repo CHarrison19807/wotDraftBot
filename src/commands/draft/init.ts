@@ -1,5 +1,6 @@
 import { MessageFlags } from "discord.js";
 import { createDraftSessionWithPlayers, getActiveDraftSession } from "../../db/draftSession";
+import type { PlayerDraftSessionCreateInput } from "../../generated/prisma/models";
 import { parseRoster } from "../../lib/draft/parseRoster";
 import { resolveRoster } from "../../lib/draft/resolveRoster";
 import { getRandomTankNames } from "../../lib/draft/tankNames";
@@ -69,11 +70,14 @@ export async function executeInit(interaction: GuildChatInputCommandInteraction)
     captainId: captain.discordUserId,
   }));
 
-  await createDraftSessionWithPlayers(
-    { guildId: interaction.guild.id, channelId: interaction.channelId, numTeams, numPlayersPerTeam, draftType },
-    resolved,
-    teamData,
-  );
+  const session: PlayerDraftSessionCreateInput = {
+    guildId: interaction.guild.id,
+    numTeams,
+    numPlayersPerTeam,
+    draftType,
+  };
+
+  await createDraftSessionWithPlayers(session, resolved, teamData);
 
   await interaction.editReply(
     `Draft session created with ${numTeams} teams. Run \`/draft setorder\` to set the captain pick order.`,
