@@ -15,7 +15,7 @@ const Subcommand = {
   Pick: "pick",
 } as const;
 
-const ADMIN_SUBCOMMANDS = new Set([Subcommand.Init, Subcommand.SetOrder, Subcommand.Cancel, Subcommand.Start]);
+const ADMIN_SUBCOMMANDS = new Set<string>([Subcommand.Init, Subcommand.SetOrder, Subcommand.Cancel, Subcommand.Start]);
 
 export const data = new SlashCommandBuilder()
   .setName("draft")
@@ -74,7 +74,7 @@ export const execute = async (interaction: ChatInputCommandInteraction) => {
   const { interaction: verifiedInteraction } = result;
   const subcommand = verifiedInteraction.options.getSubcommand();
 
-  if (subcommand in ADMIN_SUBCOMMANDS) {
+  if (ADMIN_SUBCOMMANDS.has(subcommand)) {
     if (!verifiedInteraction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
       await verifiedInteraction.reply({
         content: "You need Administrator permission to use this command.",
