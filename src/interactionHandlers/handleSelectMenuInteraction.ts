@@ -1,4 +1,4 @@
-import type { StringSelectMenuInteraction } from "discord.js";
+import { MessageFlags, type StringSelectMenuInteraction } from "discord.js";
 import { buildSetOrderComponents, buildSetOrderContent } from "../components/buildSetOrderComponents";
 import { getActiveDraftSession } from "../db/draftSession";
 import { getSetOrder, updateSetOrder } from "../lib/draft/setOrderState";
@@ -14,7 +14,7 @@ export async function handleSetOrderMenu(interaction: StringSelectMenuInteractio
 
   const session = await getActiveDraftSession(interaction.guildId);
   if (!session || session.id !== sessionId) {
-    await interaction.reply({ content: "This session is no longer active." });
+    await interaction.reply({ content: "This session is no longer active.", flags: MessageFlags.Ephemeral });
     return;
   }
 

@@ -10,7 +10,7 @@ export function buildPlayerCardConfirmButton(
 
   const confirmButton = new ButtonBuilder()
     .setCustomId(`${CustomId.DraftPickConfirm}:${sessionId}:${draftPlayer.id}`)
-    .setLabel(`Pick <@${draftPlayer.discordUserId}>`)
+    .setLabel("Confirm Pick")
     .setStyle(ButtonStyle.Success);
 
   row.addComponents(confirmButton);
