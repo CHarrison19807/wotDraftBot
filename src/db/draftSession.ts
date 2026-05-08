@@ -1,8 +1,11 @@
+import type { Prisma } from "../generated/prisma/browser";
 import { type DraftType, Status } from "../generated/prisma/client";
 import { totalDraftPicks } from "../lib/draft/getDraftTurn";
 import { prisma } from "../lib/prisma";
 
-export async function getActiveDraftSession(guildId: string) {
+export async function getActiveDraftSession(guildId: string): Promise<Prisma.PlayerDraftSessionGetPayload<{
+  include: { teams: true; players: true };
+}> | null> {
   return prisma.playerDraftSession.findFirst({
     where: { guildId, status: Status.Active },
     include: {
