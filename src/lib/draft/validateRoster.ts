@@ -12,9 +12,9 @@ export function isFalsy(value: string): boolean {
 export function validateRoster(rows: RosterRow[], numTeams: number, numPlayersPerTeam: number): string[] {
   const errors: string[] = [];
 
-  for (const row of rows) {
+  rows.forEach((row, index) => {
     const { discordUsername, worldOfTanksId, isCaptain, isLegionnaire, wotAccountRegion } = row;
-    const rowNumber = rows.indexOf(row) + 2; // +2 to account for header and 0-indexing
+    const rowNumber = index + 2; // +2 to account for header and 0-indexing
     const errorPrefix = `Row ${rowNumber}:`;
 
     if (!discordUsername) {
@@ -40,7 +40,7 @@ export function validateRoster(rows: RosterRow[], numTeams: number, numPlayersPe
         `${errorPrefix} Invalid value for \`WoT Account Region\`. Must be one of: ${[...validRegions].join(", ")}.`,
       );
     }
-  }
+  });
 
   const captains = rows.filter((r) => isTruthy(r.isCaptain));
   const expectedNumPlayers = numTeams * numPlayersPerTeam;

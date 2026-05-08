@@ -33,7 +33,7 @@ client.on(Events.ChannelDelete, (channel) => {
 });
 
 client.on(Events.InteractionCreate, (interaction) => {
-  if (interaction.isChatInputCommand()) handleSlashCommand(interaction);
+  if (interaction.isChatInputCommand()) handleSlashCommand(interaction).catch(console.error);
 
   if (interaction.isStringSelectMenu() && interaction.customId.startsWith(`${CustomId.DraftSetOrderMenu}:`)) {
     handleSetOrderMenu(interaction).catch(console.error);
