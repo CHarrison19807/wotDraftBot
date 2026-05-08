@@ -8,7 +8,6 @@ import {
 import { PickBanFormat } from "../../generated/prisma/client";
 import { verifyInteraction } from "../../lib/verifyInteraction";
 import { executeCancel } from "./cancel";
-import { executeCleanup } from "./cleanup";
 import { executeResend } from "./resend";
 import { executeStart } from "./start";
 
@@ -50,24 +49,6 @@ export const data = new SlashCommandBuilder()
       ),
   )
   .addSubcommand((sub) =>
-    sub
-      .setName(Subcommand.Cleanup)
-      .setDescription("Delete all pick/ban channels in the category")
-      .addStringOption((opt) =>
-        opt
-          .setName("filter")
-          .setDescription("Only delete channels whose name contains this substring")
-          .setRequired(true),
-      )
-      .addChannelOption((opt) =>
-        opt
-          .setName("category")
-          .setDescription("Category to clean up")
-          .addChannelTypes(ChannelType.GuildCategory)
-          .setRequired(true),
-      ),
-  )
-  .addSubcommand((sub) =>
     sub.setName(Subcommand.Resend).setDescription("Resend the pick/ban embed for the active session in this channel"),
   )
   .addSubcommand((sub) =>
@@ -86,7 +67,6 @@ export const execute = async (interaction: ChatInputCommandInteraction) => {
   const subcommand = verifiedInteraction.options.getSubcommand();
 
   if (subcommand === Subcommand.Start) return executeStart(verifiedInteraction, botMember);
-  if (subcommand === Subcommand.Cleanup) return executeCleanup(verifiedInteraction, botMember);
   if (subcommand === Subcommand.Resend) return executeResend(verifiedInteraction, botMember);
   if (subcommand === Subcommand.Cancel) return executeCancel(verifiedInteraction);
 };
