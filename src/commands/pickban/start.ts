@@ -9,7 +9,12 @@ import {
 import { buildPickBanButtons } from "../../components/buildPickBanButtons";
 import { buildPickBanEmbed } from "../../components/buildPickBanEmbed";
 import { MAP_POOL, PICK_BAN_CONFIGS } from "../../constants";
-import { createPickBanState, getActivePickBanState, updateTurnNotificationMessageId } from "../../db/pickBanState";
+import {
+  createPickBanState,
+  deleteOrphanedPickBanState,
+  getActivePickBanState,
+  updateTurnNotificationMessageId,
+} from "../../db/pickBanState";
 import type { PickBanFormat, WorldOfTanksMapName } from "../../generated/prisma/client";
 import { createDiscordChannel } from "../../lib/createDiscordChannel";
 import { getTurnNotificationContent } from "../../lib/pickban/getTurnNotificationContent";
@@ -111,6 +116,7 @@ export async function executeStart(
   } catch (error) {
     pickBanMessage?.delete().catch(() => null);
     await createdChannel?.delete().catch(() => null);
+    await deleteOrphanedPickBanState(channelToUse.id);
     await interaction.editReply({ content: "Failed to start pick/ban session." });
     console.error("Error starting pick/ban session:", error);
   }

@@ -1,4 +1,11 @@
-import { ChannelType, MessageFlags, OverwriteType, PermissionFlagsBits } from "discord.js";
+import {
+  ChannelType,
+  MessageFlags,
+  OverwriteType,
+  PermissionFlagsBits,
+  type TextChannel,
+  type VoiceChannel,
+} from "discord.js";
 import { buildDraftEmbed } from "../../components/buildDraftEmbed";
 import { getActiveDraftSession, startDraftSession, updateTeamChannelIds } from "../../db/draftSession";
 import { createDiscordChannel } from "../../lib/createDiscordChannel";
@@ -30,7 +37,7 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
   const captains = session.players.filter((player) => player.isCaptain);
   const teams = session.teams;
   const createdChannelIds: string[] = [];
-  let draftChannelId: string;
+  let draftChannel: TextChannel | VoiceChannel;
   const teamChannelUpdates: { teamId: number; channelId: string; voiceChannelId: string }[] = [];
 
   try {
@@ -48,7 +55,7 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
     });
     createdChannelIds.push(category.id);
 
-    draftChannelId = await createDiscordChannel(
+    draftChannel = await createDiscordChannel(
       guild,
       "draft-channel",
       ChannelType.GuildText,
@@ -56,9 +63,9 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
       captains.map((player) => ({ id: player.discordUserId, type: OverwriteType.Member })),
       true,
     );
-    createdChannelIds.push(draftChannelId);
+    createdChannelIds.push(draftChannel.id);
 
-    const captainChannelId = await createDiscordChannel(
+    const captainChannel = await createDiscordChannel(
       guild,
       "captains-channel",
       ChannelType.GuildText,
@@ -66,13 +73,13 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
       captains.map((player) => ({ id: player.discordUserId, type: OverwriteType.Member })),
       true,
     );
-    createdChannelIds.push(captainChannelId);
+    createdChannelIds.push(captainChannel.id);
 
     for (const team of teams) {
       const captain = captains.find((player) => player.discordUserId === team.captainId);
       const initialMembers = captain ? [{ id: captain.discordUserId, type: OverwriteType.Member }] : [];
 
-      const textChannelId = await createDiscordChannel(
+      const textChannel = await createDiscordChannel(
         guild,
         team.name,
         ChannelType.GuildText,
@@ -80,9 +87,9 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
         initialMembers,
         true,
       );
-      createdChannelIds.push(textChannelId);
+      createdChannelIds.push(textChannel.id);
 
-      const voiceChannelId = await createDiscordChannel(
+      const voiceChannel = await createDiscordChannel(
         guild,
         team.name,
         ChannelType.GuildVoice,
@@ -90,9 +97,9 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
         initialMembers,
         true,
       );
-      createdChannelIds.push(voiceChannelId);
+      createdChannelIds.push(voiceChannel.id);
 
-      teamChannelUpdates.push({ teamId: team.id, channelId: textChannelId, voiceChannelId });
+      teamChannelUpdates.push({ teamId: team.id, channelId: textChannel.id, voiceChannelId: voiceChannel.id });
     }
   } catch (error) {
     console.error("Error creating channels:", error);
@@ -109,17 +116,11 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
     }
     return;
   }
+
   await updateTeamChannelIds(session.id, teamChannelUpdates);
-
-  const draftChannel = await guild.channels.fetch(draftChannelId);
-
-  if (!draftChannel?.isTextBased()) {
-    await interaction.editReply("Channels created, but failed to locate the draft channel to post the embed.");
-    return;
-  }
 
   const draftMessage = await draftChannel.send({ embeds: [buildDraftEmbed(session)] });
   await startDraftSession(session.id, draftChannel.id, draftMessage.id);
 
-  await interaction.editReply(`Draft started! Check <#${draftChannelId}>.`);
+  await interaction.editReply(`Draft started! Check <#${draftChannel.id}>.`);
 }

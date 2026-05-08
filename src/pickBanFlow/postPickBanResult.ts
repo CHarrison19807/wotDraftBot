@@ -5,7 +5,7 @@ import { getGuildConfig } from "../db/guildConfig";
 import type { StateWithActions } from "../types";
 
 type PostResult = { ok: true } | { ok: false; reason: string };
-
+// TODO look at this later, kinda nasty + no way to know how to set for user
 export async function postPickBanResult(state: StateWithActions, client: Client, guildId: string): Promise<PostResult> {
   const guildConfig = await getGuildConfig(guildId);
   if (!guildConfig?.pickBanResultsChannelId) return { ok: true };

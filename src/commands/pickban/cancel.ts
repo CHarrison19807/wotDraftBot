@@ -26,8 +26,15 @@ export async function executeCancel(
     return;
   }
 
-  const { pickBanMessageId } = pickBanState;
+  const { pickBanMessageId, turnNotificationMessageId } = pickBanState;
   const pickBanMessage = await interaction.channel?.messages.fetch(pickBanMessageId).catch(() => null);
+
+  if (turnNotificationMessageId) {
+    const turnNotificationMessage = await interaction.channel?.messages
+      .fetch(turnNotificationMessageId)
+      .catch(() => null);
+    await turnNotificationMessage?.delete().catch(() => null);
+  }
 
   await cancelPickBanState(interaction.channelId);
   await pickBanMessage?.edit({ components: [] });
