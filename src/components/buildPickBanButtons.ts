@@ -24,16 +24,16 @@ export function buildPickBanButtons(pickBanState: StateWithActions): ActionRowBu
     const previousStep = pickBanSteps[previousStepIndex];
 
     if (!previousStep || previousStep.action !== PickBanStepAction.MapPick) {
-      return [];
+      throw new Error(`SidePick at step ${currentStepIndex} is not preceded by a MapPick step`);
     }
 
     const previousAction = actions[previousStepIndex];
     if (!previousAction?.mapName) {
-      return [];
+      throw new Error(`No recorded MapPick action found before SidePick at step ${currentStepIndex}`);
     }
 
-    const mapDef = MAP_POOL.find((m) => m.name === previousAction.mapName);
-    if (!mapDef) return [];
+    const mapDef = MAP_POOL[previousAction.mapName];
+    if (!mapDef) throw new Error(`Map "${previousAction.mapName}" not found in MAP_POOL`);
 
     for (const side of mapDef.sideOptions) {
       row.addComponents(

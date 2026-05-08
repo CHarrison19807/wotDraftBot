@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { Client, Events, GatewayIntentBits } from "discord.js";
-import { CustomId } from "./constants";
+import { INTERACTION_CUSTOM_IDS } from "./constants";
 import { upsertGuildConfig } from "./db/guildConfig";
 import { deleteOrphanedPickBanState } from "./db/pickBanState";
 import { handleButton } from "./interactionHandlers/buttons";
@@ -35,7 +35,10 @@ client.on(Events.ChannelDelete, (channel) => {
 client.on(Events.InteractionCreate, (interaction) => {
   if (interaction.isChatInputCommand()) handleSlashCommand(interaction).catch(console.error);
 
-  if (interaction.isStringSelectMenu() && interaction.customId.startsWith(`${CustomId.DraftSetOrderMenu}:`)) {
+  if (
+    interaction.isStringSelectMenu() &&
+    interaction.customId.startsWith(`${INTERACTION_CUSTOM_IDS.DraftSetOrderMenu}:`)
+  ) {
     handleSetOrderMenu(interaction).catch(console.error);
     return;
   }

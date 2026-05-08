@@ -14,7 +14,7 @@ export async function createPickBanState(data: Prisma.PickBanStateUncheckedCreat
       where: { channelId: data.channelId, status: Status.Active },
     });
     if (existing) throw new Error("Active session already exists in this channel.");
-    return tx.pickBanState.create({ data });
+    return tx.pickBanState.create({ data, include: { actions: { orderBy: { id: "asc" } } } });
   });
 }
 
@@ -22,7 +22,7 @@ export async function deleteOrphanedPickBanState(channelId: string) {
   return prisma.pickBanState.deleteMany({ where: { channelId, status: Status.Active } });
 }
 
-export async function getPickBanState(channelId: string) {
+export async function getActivePickBanState(channelId: string) {
   return prisma.pickBanState.findFirst({
     where: { channelId, status: Status.Active },
     include: { actions: { orderBy: { id: "asc" } } },
@@ -36,9 +36,9 @@ export async function updateTurnNotificationMessageId(id: string, turnNotificati
   });
 }
 
-export async function updateDraftMessageId(id: string, draftMessageId: string) {
+export async function updateDraftMessageId(id: string, pickBanMessageId: string) {
   return prisma.pickBanState.update({
     where: { id },
-    data: { draftMessageId },
+    data: { pickBanMessageId },
   });
 }

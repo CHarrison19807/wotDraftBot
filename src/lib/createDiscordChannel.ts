@@ -1,27 +1,12 @@
-import { ChannelType, type Guild, OverwriteType, PermissionFlagsBits } from "discord.js";
-
-const TEXT_ALLOW = [
-  PermissionFlagsBits.ViewChannel,
-  PermissionFlagsBits.SendMessages,
-  PermissionFlagsBits.UseApplicationCommands,
-  PermissionFlagsBits.ReadMessageHistory,
-];
-
-const VOICE_ALLOW = [
-  PermissionFlagsBits.ViewChannel,
-  PermissionFlagsBits.Connect,
-  PermissionFlagsBits.Speak,
-  PermissionFlagsBits.Stream,
-  PermissionFlagsBits.UseVAD,
-];
-
-const BOT_TEXT_ALLOW = [
-  PermissionFlagsBits.ViewChannel,
-  PermissionFlagsBits.SendMessages,
-  PermissionFlagsBits.ReadMessageHistory,
-];
-
-const BOT_VOICE_ALLOW = [PermissionFlagsBits.ViewChannel];
+import {
+  ChannelType,
+  type Guild,
+  OverwriteType,
+  PermissionFlagsBits,
+  type TextChannel,
+  type VoiceChannel,
+} from "discord.js";
+import { TEXT_CHANNEL_ALLOW, VOICE_CHANNEL_ALLOW } from "../constants";
 
 export async function createDiscordChannel(
   guild: Guild,
@@ -30,10 +15,9 @@ export async function createDiscordChannel(
   categoryId: string,
   idsWithAccess: { id: string; type: OverwriteType }[],
   isPrivate = false,
-): Promise<string> {
+): Promise<TextChannel | VoiceChannel> {
   const isVoice = channelType === ChannelType.GuildVoice;
-  const memberAllow = isVoice ? VOICE_ALLOW : TEXT_ALLOW;
-  const botAllow = isVoice ? BOT_VOICE_ALLOW : BOT_TEXT_ALLOW;
+  const allow = isVoice ? VOICE_CHANNEL_ALLOW : TEXT_CHANNEL_ALLOW;
   const deny = isPrivate ? [PermissionFlagsBits.ViewChannel] : [];
 
   const channel = await guild.channels.create({
@@ -42,10 +26,10 @@ export async function createDiscordChannel(
     parent: categoryId,
     permissionOverwrites: [
       { id: guild.roles.everyone.id, deny },
-      ...idsWithAccess.map(({ id, type }) => ({ id, type, allow: memberAllow })),
-      { id: guild.client.user.id, type: OverwriteType.Member, allow: botAllow },
+      ...idsWithAccess.map(({ id, type }) => ({ id, type, allow })),
+      { id: guild.client.user.id, type: OverwriteType.Member, allow },
     ],
   });
 
-  return channel.id;
+  return channel;
 }

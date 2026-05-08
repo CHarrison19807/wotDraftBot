@@ -5,7 +5,7 @@ import {
   type MessageActionRowComponentBuilder,
   StringSelectMenuBuilder,
 } from "discord.js";
-import { CustomId } from "../constants";
+import { INTERACTION_CUSTOM_IDS } from "../constants";
 
 interface CaptainInfo {
   userId: string;
@@ -22,12 +22,12 @@ export function buildSetOrderComponents(
   const rows: ActionRowBuilder<MessageActionRowComponentBuilder>[] = [];
 
   const resetButton = new ButtonBuilder()
-    .setCustomId(`${CustomId.DraftSetOrderReset}:${sessionId}`)
+    .setCustomId(`${INTERACTION_CUSTOM_IDS.DraftSetOrderReset}:${sessionId}`)
     .setLabel("Reset")
     .setStyle(ButtonStyle.Danger);
 
   const confirmButton = new ButtonBuilder()
-    .setCustomId(`${CustomId.DraftSetOrderConfirm}:${sessionId}`)
+    .setCustomId(`${INTERACTION_CUSTOM_IDS.DraftSetOrderConfirm}:${sessionId}`)
     .setLabel("Confirm Order")
     .setStyle(ButtonStyle.Success);
 
@@ -44,7 +44,7 @@ export function buildSetOrderComponents(
 
   // Show select menu for next captain
   const menu = new StringSelectMenuBuilder()
-    .setCustomId(`${CustomId.DraftSetOrderMenu}:${sessionId}`)
+    .setCustomId(`${INTERACTION_CUSTOM_IDS.DraftSetOrderMenu}:${sessionId}`)
     .setPlaceholder(`Select captain for pick slot #${currentOrder.length + 1}`)
     .addOptions(
       remaining.map((captain) => ({

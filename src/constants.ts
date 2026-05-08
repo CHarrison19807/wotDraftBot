@@ -1,10 +1,12 @@
+import { PermissionFlagsBits } from "discord.js";
 import {
   ActingTeam,
   MapSide,
   type PickBanFormat,
   PickBanStepAction,
-  WorldOfTanksMapName,
+  type WorldOfTanksMapName,
 } from "./generated/prisma/client";
+import type { PickBanStep } from "./types";
 
 const TeamA = ActingTeam.TeamA;
 const TeamB = ActingTeam.TeamB;
@@ -22,63 +24,65 @@ export const rosterTruthyValues = new Set(["yes", "true", "1"]);
 export const rosterFalsyValues = new Set(["no", "false", "0", ""]);
 export const validRegions = new Set(["na", "eu", "asia"]);
 
-export const CustomId = {
+export const REQUIRED_PERMISSIONS = new Map<bigint, string>([
+  [PermissionFlagsBits.ViewChannel, "View Channel"],
+  [PermissionFlagsBits.SendMessages, "Send Messages"],
+  [PermissionFlagsBits.ManageChannels, "Manage Channels"],
+  [PermissionFlagsBits.ReadMessageHistory, "Read Message History"],
+]);
+
+export const INTERACTION_CUSTOM_IDS = {
   DraftSetOrderConfirm: "draft_setorder_confirm",
   DraftSetOrderReset: "draft_setorder_reset",
   DraftSetOrderMenu: "draft_setorder_menu",
   DraftPickConfirm: "draft_pick_confirm",
 } as const;
 
-export interface WorldOfTanksMap {
-  name: WorldOfTanksMapName;
-  sideOptions: MapSide[];
-}
+export const TEXT_CHANNEL_ALLOW = [
+  PermissionFlagsBits.ViewChannel,
+  PermissionFlagsBits.SendMessages,
+  PermissionFlagsBits.UseApplicationCommands,
+  PermissionFlagsBits.ReadMessageHistory,
+] as const;
 
-export interface PickBanStep {
-  action: PickBanStepAction;
-  actingTeam: ActingTeam;
-}
+export const VOICE_CHANNEL_ALLOW = [
+  PermissionFlagsBits.ViewChannel,
+  PermissionFlagsBits.Connect,
+  PermissionFlagsBits.Speak,
+  PermissionFlagsBits.Stream,
+  PermissionFlagsBits.UseVAD,
+] as const;
 
-export const MAP_POOL: WorldOfTanksMap[] = [
-  {
-    name: WorldOfTanksMapName.Cliff,
+export const MAP_POOL: { [key in WorldOfTanksMapName]: { sideOptions: MapSide[] } } = {
+  Cliff: {
     sideOptions: [North, South],
   },
-  {
-    name: WorldOfTanksMapName.Ensk,
+  Ensk: {
     sideOptions: [North, South],
   },
-  {
-    name: WorldOfTanksMapName.GhostTown,
+  GhostTown: {
     sideOptions: [North, South],
   },
-  {
-    name: WorldOfTanksMapName.Himmelsdorf,
+  Himmelsdorf: {
     sideOptions: [North, South],
   },
-  {
-    name: WorldOfTanksMapName.Westfield,
+  Westfield: {
     sideOptions: [East, West],
   },
-  {
-    name: WorldOfTanksMapName.Pilsen,
+  Pilsen: {
     sideOptions: [North, South],
   },
-  {
-    name: WorldOfTanksMapName.SandRiver,
+  SandRiver: {
     sideOptions: [East, West],
   },
-  {
-    name: WorldOfTanksMapName.Tundra,
+  Tundra: {
+    sideOptions: [East, West],
+  },
+  Ruinberg: {
     sideOptions: [North, South],
   },
-  {
-    name: WorldOfTanksMapName.Ruinberg,
-    sideOptions: [North, South],
-  },
-];
-
-export const PICK_BAN_CONFIGS: { [key in PickBanFormat]: PickBanStep[] } = {
+};
+export const PICK_BAN_CONFIGS: { [key in PickBanFormat]: [PickBanStep, ...PickBanStep[]] } = {
   Bo5: [
     { action: MapBan, actingTeam: TeamA },
     { action: MapBan, actingTeam: TeamB },

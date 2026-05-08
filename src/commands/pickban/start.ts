@@ -1,20 +1,26 @@
 import {
   ChannelType,
   type GuildMember,
-  MessageFlags,
+  type Message,
   OverwriteType,
   PermissionFlagsBits,
-  TextChannel,
+  type TextChannel,
 } from "discord.js";
 import { buildPickBanButtons } from "../../components/buildPickBanButtons";
 import { buildPickBanEmbed } from "../../components/buildPickBanEmbed";
 import { MAP_POOL, PICK_BAN_CONFIGS } from "../../constants";
-import { createPickBanState, getPickBanState, updateTurnNotificationMessageId } from "../../db/pickBanState";
-import type { PickBanFormat } from "../../generated/prisma/client";
+import { createPickBanState, getActivePickBanState, updateTurnNotificationMessageId } from "../../db/pickBanState";
+import type { PickBanFormat, WorldOfTanksMapName } from "../../generated/prisma/client";
+import { createDiscordChannel } from "../../lib/createDiscordChannel";
 import { getTurnNotificationContent } from "../../lib/pickban/getTurnNotificationContent";
+import { verifyChannelPermissions, verifyGuildPermissions } from "../../lib/verifyDiscordPermissions";
 import type { GuildChatInputCommandInteraction } from "../../types";
 
-export async function executeStart(interaction: GuildChatInputCommandInteraction, botMember: GuildMember) {
+export async function executeStart(
+  interaction: GuildChatInputCommandInteraction,
+  botMember: GuildMember,
+  channel: TextChannel,
+) {
   const { guild } = interaction;
 
   const format = interaction.options.getString("format", true) as PickBanFormat;
@@ -22,116 +28,64 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
   const captainB = interaction.options.getUser("captain_b", true);
   const categoryOption = interaction.options.getChannel("category", false, [ChannelType.GuildCategory]);
 
-  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
-  if (captainA.id === captainB.id) {
-    await interaction.editReply("Team A and Team B captains must be different users.");
-    return;
-  }
-
-  let channel: TextChannel;
-  let createdChannel = false;
+  let createdChannel: TextChannel | null = null;
 
   if (categoryOption) {
-    if (!botMember.permissions.has(PermissionFlagsBits.ManageChannels)) {
-      await interaction.editReply(
-        "The bot is missing the **Manage Channels** permission required to create a pick/ban channel.",
-      );
+    const missingPermissions = verifyGuildPermissions([PermissionFlagsBits.ManageChannels], botMember);
+
+    if (missingPermissions) {
+      await interaction.editReply(missingPermissions);
       return;
     }
 
-    channel = await guild.channels.create({
-      name: `pickban-${format.toLowerCase()}-${Date.now()}`,
-      type: ChannelType.GuildText,
-      parent: categoryOption.id,
-      permissionOverwrites: [
-        {
-          id: guild.roles.everyone.id,
-          deny: [PermissionFlagsBits.ViewChannel],
-        },
-        {
-          id: captainA.id,
-          type: OverwriteType.Member,
-          allow: [
-            PermissionFlagsBits.ViewChannel,
-            PermissionFlagsBits.SendMessages,
-            PermissionFlagsBits.UseApplicationCommands,
-            PermissionFlagsBits.ReadMessageHistory,
-          ],
-        },
-        {
-          id: captainB.id,
-          type: OverwriteType.Member,
-          allow: [
-            PermissionFlagsBits.ViewChannel,
-            PermissionFlagsBits.SendMessages,
-            PermissionFlagsBits.UseApplicationCommands,
-            PermissionFlagsBits.ReadMessageHistory,
-          ],
-        },
-        {
-          id: interaction.client.user.id,
-          type: OverwriteType.Member,
-          allow: [
-            PermissionFlagsBits.ViewChannel,
-            PermissionFlagsBits.SendMessages,
-            PermissionFlagsBits.ReadMessageHistory,
-          ],
-        },
-      ],
-    });
-    createdChannel = true;
+    const idsWithAccess = [
+      { id: captainA.id, type: OverwriteType.Member },
+      { id: captainB.id, type: OverwriteType.Member },
+    ];
+
+    createdChannel = (await createDiscordChannel(
+      guild,
+      `pickban-${format.toLowerCase()}-${Date.now()}`,
+      ChannelType.GuildText,
+      categoryOption.id,
+      idsWithAccess,
+      true,
+    )) as TextChannel;
   } else {
-    if (!(interaction.channel instanceof TextChannel)) {
-      await interaction.editReply("This command must be run in a text channel.");
+    const missingPermissions = verifyChannelPermissions(
+      [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
+      botMember,
+      channel,
+    );
+
+    if (missingPermissions) {
+      await interaction.editReply(missingPermissions);
       return;
     }
 
-    const permissions = interaction.channel.permissionsFor(botMember);
-    if (!permissions.has([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages])) {
-      await interaction.editReply(
-        "The bot is missing **View Channel** or **Send Messages** permissions in this channel.",
-      );
-      return;
-    }
-
-    const existingState = await getPickBanState(interaction.channel.id);
+    const existingState = await getActivePickBanState(channel.id);
     if (existingState) {
       await interaction.editReply("A pick/ban session is already active in this channel.");
       return;
     }
-
-    channel = interaction.channel;
   }
 
-  const firstStep = PICK_BAN_CONFIGS[format][0];
-  if (!firstStep) {
-    if (createdChannel) await channel.delete();
-    await interaction.editReply(
-      `Invalid format configuration.\nFormat **${format}** does not have any pick/ban steps configured.`,
-    );
-    return;
-  }
+  const channelToUse = createdChannel || channel;
+
+  let pickBanMessage: Message | null = null;
 
   try {
-    const pickBanMessage = await channel.send({ content: "Initializing pick/ban session..." });
+    pickBanMessage = await channelToUse.send({ content: "Initializing pick/ban session..." });
 
-    await createPickBanState({
-      channelId: channel.id,
+    const newState = await createPickBanState({
+      channelId: channelToUse.id,
       guildId: guild.id,
       format,
       teamACaptainId: captainA.id,
       teamBCaptainId: captainB.id,
-      availableMaps: MAP_POOL.map((map) => map.name),
+      availableMaps: Object.keys(MAP_POOL) as WorldOfTanksMapName[],
       pickBanMessageId: pickBanMessage.id,
     });
-
-    const newState = await getPickBanState(channel.id);
-    if (!newState) {
-      if (createdChannel) await channel.delete().catch(() => null);
-      await interaction.editReply("Failed to create pick/ban session.");
-      return;
-    }
 
     await pickBanMessage.edit({
       content: null,
@@ -139,15 +93,20 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
       components: buildPickBanButtons(newState),
     });
 
+    const firstStep = PICK_BAN_CONFIGS[format][0];
+
     const notificationContent = getTurnNotificationContent(firstStep, captainA.id, captainB.id);
-    const notificationMessage = await channel.send(notificationContent);
+    const notificationMessage = await channelToUse.send(notificationContent);
     await updateTurnNotificationMessageId(newState.id, notificationMessage.id);
 
+    // TODO log to config log channel ...
+
     await interaction.editReply({
-      content: `${format} Format\nTeam A Captain: <@${captainA.id}>\nTeam B Captain: <@${captainB.id}>\nPick/ban channel: ${channel}\nCreated by: <@${interaction.user.id}>`,
+      content: `${format} Format\nTeam A Captain: <@${captainA.id}>\nTeam B Captain: <@${captainB.id}>\nPick/ban channel: ${channelToUse}\nCreated by: <@${interaction.user.id}>`,
     });
   } catch (error) {
-    if (createdChannel) await channel.delete().catch(() => null);
-    throw error;
+    pickBanMessage?.delete().catch(() => null);
+    await createdChannel?.delete().catch(() => null);
+    await interaction.editReply({ content: `Failed to start pick/ban session.` });
   }
 }

@@ -1,9 +1,10 @@
-import type { ChatInputCommandInteraction, GuildMember } from "discord.js";
+import { type ChatInputCommandInteraction, type GuildMember, TextChannel } from "discord.js";
 import type { GuildChatInputCommandInteraction } from "../types";
 
 export type verifiedInteraction = {
   interaction: GuildChatInputCommandInteraction;
   botMember: GuildMember;
+  channel: TextChannel;
 };
 
 export function verifyInteraction(interaction: ChatInputCommandInteraction): verifiedInteraction | null {
@@ -12,5 +13,8 @@ export function verifyInteraction(interaction: ChatInputCommandInteraction): ver
   const botMember = interaction.guild.members.me;
   if (!botMember) return null;
 
-  return { interaction: interaction as GuildChatInputCommandInteraction, botMember };
+  const channel = interaction.channel;
+  if (!(channel instanceof TextChannel)) return null;
+
+  return { interaction: interaction as GuildChatInputCommandInteraction, botMember, channel };
 }

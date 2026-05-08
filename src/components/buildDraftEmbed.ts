@@ -45,7 +45,7 @@ export function buildDraftEmbed(session: DraftSessionWithDetails): EmbedBuilder 
   if (currentTeam) {
     embed.addFields({
       name: `${currentTeam.name} (${currentTeamPlayers.length}/${numPlayersPerTeam})`,
-      value: lines.join("\n"),
+      value: lines.join("\n") || "*No players drafted yet*",
     });
   }
 

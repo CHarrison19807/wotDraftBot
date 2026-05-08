@@ -56,17 +56,19 @@ export const data = new SlashCommandBuilder()
   );
 
 export const execute = async (interaction: ChatInputCommandInteraction) => {
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
   const result = verifyInteraction(interaction);
 
   if (!result) {
-    await interaction.reply({ content: "This command can only be used in a server.", flags: MessageFlags.Ephemeral });
+    await interaction.editReply({ content: "This command can only be used in a server." });
     return;
   }
 
-  const { interaction: verifiedInteraction, botMember } = result;
+  const { interaction: verifiedInteraction, botMember, channel } = result;
   const subcommand = verifiedInteraction.options.getSubcommand();
 
-  if (subcommand === Subcommand.Start) return executeStart(verifiedInteraction, botMember);
-  if (subcommand === Subcommand.Resend) return executeResend(verifiedInteraction, botMember);
-  if (subcommand === Subcommand.Cancel) return executeCancel(verifiedInteraction);
+  if (subcommand === Subcommand.Start) return executeStart(verifiedInteraction, botMember, channel);
+  if (subcommand === Subcommand.Resend) return executeResend(verifiedInteraction, botMember, channel);
+  if (subcommand === Subcommand.Cancel) return executeCancel(verifiedInteraction, botMember, channel);
 };

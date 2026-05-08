@@ -1,5 +1,5 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
-import { CustomId } from "../constants";
+import { INTERACTION_CUSTOM_IDS } from "../constants";
 import type { DraftPlayer } from "../generated/prisma/client";
 
 export function buildPlayerCardConfirmButton(
@@ -9,7 +9,7 @@ export function buildPlayerCardConfirmButton(
   const row = new ActionRowBuilder<ButtonBuilder>();
 
   const confirmButton = new ButtonBuilder()
-    .setCustomId(`${CustomId.DraftPickConfirm}:${sessionId}:${draftPlayer.id}`)
+    .setCustomId(`${INTERACTION_CUSTOM_IDS.DraftPickConfirm}:${sessionId}:${draftPlayer.id}`)
     .setLabel("Confirm Pick")
     .setStyle(ButtonStyle.Success);
 

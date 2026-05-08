@@ -2,7 +2,7 @@ import { type ButtonInteraction, MessageFlags, TextChannel } from "discord.js";
 import { buildPickBanButtons } from "../../components/buildPickBanButtons";
 import { buildPickBanEmbed } from "../../components/buildPickBanEmbed";
 import { PICK_BAN_CONFIGS } from "../../constants";
-import { getPickBanState, updateTurnNotificationMessageId } from "../../db/pickBanState";
+import { getActivePickBanState, updateTurnNotificationMessageId } from "../../db/pickBanState";
 import { ActingTeam } from "../../generated/prisma/client";
 import { getTurnNotificationContent } from "../../lib/pickban/getTurnNotificationContent";
 import { handleAction } from "../../pickBanFlow/handleAction";
@@ -10,7 +10,7 @@ import { handleFinish } from "../../pickBanFlow/handleFinish";
 import { postPickBanResult } from "../../pickBanFlow/postPickBanResult";
 
 export async function handlePickBanButton(interaction: ButtonInteraction) {
-  const state = await getPickBanState(interaction.channelId);
+  const state = await getActivePickBanState(interaction.channelId);
 
   if (!state) {
     await interaction.reply({ content: "No active pick/ban session in this channel.", flags: MessageFlags.Ephemeral });
