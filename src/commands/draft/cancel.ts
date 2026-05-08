@@ -1,5 +1,6 @@
 import { MessageFlags } from "discord.js";
 import { cancelDraftSession, getActiveDraftSession } from "../../db/draftSession";
+import { clearSetOrder } from "../../lib/draft/setOrderState";
 import type { GuildChatInputCommandInteraction } from "../../types";
 
 export async function executeCancel(interaction: GuildChatInputCommandInteraction) {
@@ -13,6 +14,7 @@ export async function executeCancel(interaction: GuildChatInputCommandInteractio
 
   try {
     await cancelDraftSession(existing.id);
+    clearSetOrder(existing.id);
     await interaction.editReply("Draft session has been cancelled.");
   } catch (error) {
     console.error("Error occurred while canceling draft session:", error);

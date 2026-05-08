@@ -104,7 +104,7 @@ export async function recordPick(sessionId: string, playerId: number, teamId: nu
     });
 
     return tx.playerDraftSession.update({
-      where: { id: sessionId },
+      where: { id: sessionId, currentPickIndex: session.currentPickIndex },
       data: {
         currentPickIndex: newPickIndex,
         ...(isComplete && { status: Status.Complete }),
@@ -115,6 +115,20 @@ export async function recordPick(sessionId: string, playerId: number, teamId: nu
       },
     });
   });
+}
+
+export async function updateTeamChannelIds(
+  sessionId: string,
+  teamChannels: { teamId: number; channelId: string; voiceChannelId: string }[],
+) {
+  return prisma.$transaction(
+    teamChannels.map(({ teamId, channelId, voiceChannelId }) =>
+      prisma.draftTeam.update({
+        where: { id: teamId, sessionId },
+        data: { channelId, voiceChannelId },
+      }),
+    ),
+  );
 }
 
 export async function cancelDraftSession(sessionId: string) {

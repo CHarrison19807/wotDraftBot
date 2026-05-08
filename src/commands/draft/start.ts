@@ -1,6 +1,6 @@
 import { ChannelType, MessageFlags, OverwriteType, PermissionFlagsBits } from "discord.js";
 import { buildDraftEmbed } from "../../components/buildDraftEmbed";
-import { getActiveDraftSession, startDraftSession } from "../../db/draftSession";
+import { getActiveDraftSession, startDraftSession, updateTeamChannelIds } from "../../db/draftSession";
 import { createDiscordChannel } from "../../lib/createDiscordChannel";
 import type { GuildChatInputCommandInteraction } from "../../types";
 
@@ -31,6 +31,7 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
   const teams = session.teams;
   const createdChannelIds: string[] = [];
   let draftChannelId: string;
+  const teamChannelUpdates: { teamId: number; channelId: string; voiceChannelId: string }[] = [];
 
   try {
     const category = await guild.channels.create({
@@ -90,6 +91,8 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
         true,
       );
       createdChannelIds.push(voiceChannelId);
+
+      teamChannelUpdates.push({ teamId: team.id, channelId: textChannelId, voiceChannelId });
     }
   } catch (error) {
     console.error("Error creating channels:", error);
@@ -106,6 +109,7 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
     }
     return;
   }
+  await updateTeamChannelIds(session.id, teamChannelUpdates);
 
   const draftChannel = await guild.channels.fetch(draftChannelId);
 
