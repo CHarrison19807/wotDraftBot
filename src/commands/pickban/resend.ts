@@ -1,7 +1,9 @@
 import { type GuildMember, PermissionFlagsBits, type TextChannel } from "discord.js";
 import { buildPickBanButtons } from "../../components/buildPickBanButtons";
 import { buildPickBanEmbed } from "../../components/buildPickBanEmbed";
-import { getActivePickBanState, updateDraftMessageId } from "../../db/pickBanState";
+import { PICK_BAN_CONFIGS } from "../../constants";
+import { getActivePickBanState, updateDraftMessageId, updateTurnNotificationMessageId } from "../../db/pickBanState";
+import { getTurnNotificationContent } from "../../lib/pickban/getTurnNotificationContent";
 import { verifyChannelPermissions } from "../../lib/verifyDiscordPermissions";
 import type { GuildChatInputCommandInteraction } from "../../types";
 
@@ -28,7 +30,13 @@ export async function executeResend(
     return;
   }
 
-  const { pickBanMessageId } = state;
+  const { pickBanMessageId, turnNotificationMessageId, currentStepIndex, format, id, teamACaptainId, teamBCaptainId } =
+    state;
+
+  if (turnNotificationMessageId) {
+    const notificationMessage = await channel.messages.fetch(turnNotificationMessageId).catch(() => null);
+    await notificationMessage?.delete().catch(() => null);
+  }
 
   const pickBanMessage = await channel.messages.fetch(pickBanMessageId).catch(() => null);
 
@@ -38,6 +46,14 @@ export async function executeResend(
     embeds: [buildPickBanEmbed(state)],
     components: buildPickBanButtons(state),
   });
+
+  const step = PICK_BAN_CONFIGS[format][currentStepIndex];
+
+  if (step) {
+    const notificationContent = getTurnNotificationContent(step, teamACaptainId, teamBCaptainId);
+    const notificationMessage = await channel.send(notificationContent);
+    await updateTurnNotificationMessageId(id, notificationMessage.id);
+  }
 
   await updateDraftMessageId(state.id, newDraftMessage.id);
 

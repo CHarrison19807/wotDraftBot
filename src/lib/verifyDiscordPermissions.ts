@@ -1,18 +1,18 @@
-import type { GuildMember, TextChannel } from "discord.js";
+import { CategoryChannel, type GuildMember, type TextChannel } from "discord.js";
 import { REQUIRED_PERMISSIONS } from "../constants";
 
 export function verifyChannelPermissions(
   requiredPermissions: bigint[],
   botMember: GuildMember,
-  channel: TextChannel,
+  channel: TextChannel | CategoryChannel,
 ): string {
   const channelPerms = channel.permissionsFor(botMember);
   const missingPermissions = requiredPermissions.filter((perm) => !channelPerms.has(perm));
-
+  const messageSuffix = channel instanceof CategoryChannel ? `in the category ${channel.name}` : `in <#${channel.id}>`;
   return missingPermissions
     .map(
       (perm) =>
-        `The bot is missing the **${REQUIRED_PERMISSIONS.get(perm) ?? "Unknown"}** permission in <#${channel.id}>.`,
+        `The bot is missing the **${REQUIRED_PERMISSIONS.get(perm) ?? "Unknown"}** permission ${messageSuffix}.`,
     )
     .join("\n");
 }

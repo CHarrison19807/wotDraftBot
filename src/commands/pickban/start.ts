@@ -13,7 +13,7 @@ import { createPickBanState, getActivePickBanState, updateTurnNotificationMessag
 import type { PickBanFormat, WorldOfTanksMapName } from "../../generated/prisma/client";
 import { createDiscordChannel } from "../../lib/createDiscordChannel";
 import { getTurnNotificationContent } from "../../lib/pickban/getTurnNotificationContent";
-import { verifyChannelPermissions, verifyGuildPermissions } from "../../lib/verifyDiscordPermissions";
+import { verifyChannelPermissions } from "../../lib/verifyDiscordPermissions";
 import type { GuildChatInputCommandInteraction } from "../../types";
 
 export async function executeStart(
@@ -31,7 +31,11 @@ export async function executeStart(
   let createdChannel: TextChannel | null = null;
 
   if (categoryOption) {
-    const missingPermissions = verifyGuildPermissions([PermissionFlagsBits.ManageChannels], botMember);
+    const missingPermissions = verifyChannelPermissions(
+      [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels],
+      botMember,
+      categoryOption,
+    );
 
     if (missingPermissions) {
       await interaction.editReply(missingPermissions);
@@ -70,7 +74,7 @@ export async function executeStart(
     }
   }
 
-  const channelToUse = createdChannel || channel;
+  const channelToUse = createdChannel ?? channel;
 
   let pickBanMessage: Message | null = null;
 
@@ -107,6 +111,7 @@ export async function executeStart(
   } catch (error) {
     pickBanMessage?.delete().catch(() => null);
     await createdChannel?.delete().catch(() => null);
-    await interaction.editReply({ content: `Failed to start pick/ban session.` });
+    await interaction.editReply({ content: "Failed to start pick/ban session." });
+    console.error("Error starting pick/ban session:", error);
   }
 }
