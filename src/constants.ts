@@ -53,35 +53,45 @@ export const VOICE_CHANNEL_ALLOW = [
   PermissionFlagsBits.UseVAD,
 ] as const;
 
-export const MAP_POOL: { [key in WorldOfTanksMapName]: { sideOptions: MapSide[] } } = {
+export const MAP_POOL: { [key in WorldOfTanksMapName]: { formattedName: string; sideOptions: MapSide[] } } = {
   Cliff: {
+    formattedName: "Cliff",
     sideOptions: [North, South],
   },
   Ensk: {
+    formattedName: "Ensk",
     sideOptions: [North, South],
   },
   GhostTown: {
+    formattedName: "Ghost Town",
     sideOptions: [North, South],
   },
   Himmelsdorf: {
+    formattedName: "Himmelsdorf",
     sideOptions: [North, South],
   },
   Westfield: {
+    formattedName: "Westfield",
     sideOptions: [East, West],
   },
   Pilsen: {
+    formattedName: "Pilsen",
     sideOptions: [North, South],
   },
   SandRiver: {
+    formattedName: "Sand River",
     sideOptions: [East, West],
   },
   Tundra: {
+    formattedName: "Tundra",
     sideOptions: [East, West],
   },
   Ruinberg: {
+    formattedName: "Ruinberg",
     sideOptions: [North, South],
   },
 };
+
 export const PICK_BAN_CONFIGS: { [key in PickBanFormat]: [PickBanStep, ...PickBanStep[]] } = {
   Bo5: [
     { action: MapBan, actingTeam: TeamA },

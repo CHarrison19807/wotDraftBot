@@ -1,92 +1,95 @@
 import { EmbedBuilder } from "discord.js";
-import { PICK_BAN_CONFIGS } from "../constants";
+import { MAP_POOL, PICK_BAN_CONFIGS } from "../constants";
 import { ActingTeam, PickBanStepAction, Status } from "../generated/prisma/client";
-import { formatMapName } from "../lib/pickban/formatMapName";
 import type { StateWithActions } from "../types";
 
 export function buildPickBanEmbed(pickBanState: StateWithActions): EmbedBuilder {
   const embed = new EmbedBuilder().setTitle("Pick/Ban Session");
-
-  const steps = PICK_BAN_CONFIGS[pickBanState.format];
-  if (!steps) {
-    return new EmbedBuilder()
-      .setTitle("Pick/Ban")
-      .setDescription(`Invalid format configuration for ${pickBanState.format}.`)
-      .setColor(0xff0000);
-  }
-
+  const { format, status, actions } = pickBanState;
+  const steps = PICK_BAN_CONFIGS[format];
   const currentStep = steps[pickBanState.currentStepIndex];
-  const isComplete = pickBanState.status === Status.Complete;
-  const actions = pickBanState.actions;
+  const isComplete = status === Status.Complete;
 
   // Build table rows, merging MapPick + SidePick into one row
   type TableRow = { teamA: string; action: string; teamB: string };
-  const rows: TableRow[] = [];
 
-  let i = 0;
-  while (i < actions.length) {
-    const a = actions[i];
-    if (!a) break;
+  const rows: TableRow[] = actions.reduce<TableRow[]>((acc, a, i) => {
+    const { action, mapName, actingTeam } = a;
+    const formattedMapName = MAP_POOL[mapName].formattedName;
 
-    if (a.action === PickBanStepAction.MapBan) {
-      if (!a.mapName) {
-        throw new Error(`Missing map name for MapBan action at index ${i} of pick/ban state ${pickBanState.id}`);
-      }
-
-      rows.push({
-        teamA: a.actingTeam === ActingTeam.TeamA ? formatMapName(a.mapName) : "-",
-        action: "Ban",
-        teamB: a.actingTeam === ActingTeam.TeamB ? formatMapName(a.mapName) : "-",
-      });
-      i++;
-    } else if (a.action === PickBanStepAction.MapPick) {
-      if (!a.mapName) {
-        throw new Error(`Missing map name for MapPick action at index ${i} of pick/ban state ${pickBanState.id}`);
-      }
-
-      const next = actions[i + 1];
-      if (next?.action === PickBanStepAction.SidePick) {
-        rows.push({
-          teamA: a.actingTeam === ActingTeam.TeamA ? formatMapName(a.mapName) : (next.side ?? "-"),
+    switch (action) {
+      case PickBanStepAction.MapPick: {
+        const sidePick = actions[i + 1]?.action === PickBanStepAction.SidePick ? actions[i + 1] : null;
+        acc.push({
+          teamA: actingTeam === ActingTeam.TeamA ? formattedMapName : (sidePick?.side ?? "-"),
           action: "Pick",
-          teamB: a.actingTeam === ActingTeam.TeamB ? formatMapName(a.mapName) : (next.side ?? "-"),
+          teamB: actingTeam === ActingTeam.TeamB ? formattedMapName : (sidePick?.side ?? "-"),
         });
-        i += 2;
-      } else {
-        rows.push({
-          teamA: a.actingTeam === ActingTeam.TeamA ? formatMapName(a.mapName) : "-",
-          action: "Pick",
-          teamB: a.actingTeam === ActingTeam.TeamB ? formatMapName(a.mapName) : "-",
-        });
-        i++;
+        break;
       }
-    } else {
-      i++;
+
+      case PickBanStepAction.MapBan: {
+        acc.push({
+          teamA: actingTeam === ActingTeam.TeamA ? formattedMapName : "-",
+          action: "Ban",
+          teamB: actingTeam === ActingTeam.TeamB ? formattedMapName : "-",
+        });
+        break;
+      }
+      case PickBanStepAction.SidePick: {
+        // consumed by the preceding MapPick row
+        break;
+      }
+
+      default: {
+        throw new Error(`Unknown PickBanStepAction: ${action}`);
+      }
+    }
+    return acc;
+  }, []);
+
+  let description: string;
+
+  switch (status) {
+    case Status.Active: {
+      if (!currentStep) {
+        throw new Error(
+          `No current step found for pick/ban state ${pickBanState.id} at step index ${pickBanState.currentStepIndex}`,
+        );
+      }
+      const captainId =
+        currentStep.actingTeam === ActingTeam.TeamA ? pickBanState.teamACaptainId : pickBanState.teamBCaptainId;
+      const verb =
+        currentStep.action === PickBanStepAction.SidePick
+          ? "pick a side"
+          : currentStep.action === PickBanStepAction.MapPick
+            ? "pick a map"
+            : "ban a map";
+      description = `<@${captainId}> **${verb}**`;
+      break;
+    }
+
+    case Status.Complete: {
+      description = "Pick/ban complete.";
+      break;
+    }
+
+    case Status.Cancelled: {
+      description = "Pick/ban cancelled.";
+      break;
+    }
+
+    default: {
+      throw new Error(`Unknown pick/ban status: ${status}`);
     }
   }
 
-  let description: string;
-  if (isComplete) {
-    description = "Pick/ban complete.";
-  } else if (currentStep) {
-    const captainId =
-      currentStep.actingTeam === ActingTeam.TeamA ? pickBanState.teamACaptainId : pickBanState.teamBCaptainId;
-    const verb =
-      currentStep.action === PickBanStepAction.SidePick
-        ? "pick a side"
-        : currentStep.action === PickBanStepAction.MapPick
-          ? "pick a map"
-          : "ban a map";
-    description = `<@${captainId}> **${verb}**`;
-  } else {
-    description = "Pick/ban complete.";
-  }
-
   if (isComplete && pickBanState.deciderMap) {
+    const formattedDeciderMapName = MAP_POOL[pickBanState.deciderMap].formattedName;
     rows.push({
-      teamA: formatMapName(pickBanState.deciderMap),
+      teamA: formattedDeciderMapName,
       action: "Decider",
-      teamB: formatMapName(pickBanState.deciderMap),
+      teamB: formattedDeciderMapName,
     });
   }
 
