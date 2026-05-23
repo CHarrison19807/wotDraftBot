@@ -4,6 +4,7 @@
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
@@ -80,6 +81,8 @@ model PickBanState {
   actions                    PickBanAction[]
   createdAt                  DateTime      @default(now())
   updatedAt                  DateTime      @updatedAt
+  
+  @@unique([channelId, status], map: "unique_active_channel", where: { status: "Active" })
 }
 
 model PlayerDraftSession {
@@ -142,6 +145,6 @@ model PickBanAction {
   stateId    String
   action     PickBanStepAction
   actingTeam ActingTeam
-  mapName    WorldOfTanksMapName?
+  mapName    WorldOfTanksMapName
   side       MapSide?
 }
