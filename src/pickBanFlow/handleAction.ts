@@ -6,7 +6,7 @@ import { isMapSide, isWorldOfTanksMapName } from "../lib/guards";
 import type { StateWithActions } from "../types";
 
 export async function handleAction(interaction: ButtonInteraction, state: StateWithActions): Promise<StateWithActions> {
-  const { format, currentStepIndex, id, availableMaps, status } = state;
+  const { format, currentStepIndex, id, status } = state;
   if (status !== Status.Active) throw new Error("Cannot perform action on non-active pick/ban session");
 
   const steps = PICK_BAN_CONFIGS[format];
@@ -25,14 +25,7 @@ export async function handleAction(interaction: ButtonInteraction, state: StateW
       throw new Error(`Invalid or missing map name in customId: ${option}`);
     }
 
-    const newAvailable = state.availableMaps.filter((m) => m !== option);
-
-    return recordActionAndAdvanceStep(
-      { stateId: id, action, actingTeam, mapName: option },
-      id,
-      nextStepIndex,
-      newAvailable,
-    );
+    return recordActionAndAdvanceStep({ stateId: id, action, actingTeam, mapName: option }, id, nextStepIndex);
   }
 
   if (currentStep.action === PickBanStepAction.SidePick) {
@@ -46,12 +39,7 @@ export async function handleAction(interaction: ButtonInteraction, state: StateW
     const mapName = previousAction.mapName;
     if (!mapName) throw new Error("No previous map pick found for side pick");
 
-    return recordActionAndAdvanceStep(
-      { stateId: id, action, actingTeam, mapName, side: option },
-      id,
-      nextStepIndex,
-      availableMaps,
-    );
+    return recordActionAndAdvanceStep({ stateId: id, action, actingTeam, mapName, side: option }, id, nextStepIndex);
   }
 
   throw new Error(`Unhandled step action: ${action}`);

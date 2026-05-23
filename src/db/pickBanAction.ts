@@ -6,13 +6,12 @@ export async function recordActionAndAdvanceStep(
   actionData: Prisma.PickBanActionUncheckedCreateInput,
   stateId: string,
   nextStepIndex: number,
-  availableMaps: WorldOfTanksMapName[],
 ): Promise<StateWithActions> {
   const [, updatedState] = await prisma.$transaction([
     prisma.pickBanAction.create({ data: actionData }),
     prisma.pickBanState.update({
       where: { id: stateId, status: Status.Active },
-      data: { currentStepIndex: nextStepIndex, availableMaps },
+      data: { currentStepIndex: nextStepIndex },
       include: { actions: { orderBy: { id: "asc" } } },
     }),
   ]);
@@ -22,7 +21,7 @@ export async function recordActionAndAdvanceStep(
 export async function completePickBanState(id: string, deciderMap: WorldOfTanksMapName): Promise<StateWithActions> {
   return prisma.pickBanState.update({
     where: { id },
-    data: { status: Status.Complete, availableMaps: [], deciderMap },
+    data: { status: Status.Complete, deciderMap },
     include: { actions: { orderBy: { id: "asc" } } },
   });
 }

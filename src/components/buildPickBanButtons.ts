@@ -1,11 +1,12 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 import { MAP_POOL, PICK_BAN_CONFIGS } from "../constants";
 import { PickBanStepAction, Status } from "../generated/prisma/client";
+import { getAvailableMaps } from "../lib/getAvailableMaps";
 import type { StateWithActions } from "../types";
 
 export function buildPickBanButtons(pickBanState: StateWithActions): ActionRowBuilder<ButtonBuilder>[] {
   const { currentStepIndex, format, status, actions } = pickBanState;
-
+  const availableMaps = getAvailableMaps(actions);
   if (status !== Status.Active) return [];
 
   const pickBanSteps = PICK_BAN_CONFIGS[format];
@@ -45,13 +46,13 @@ export function buildPickBanButtons(pickBanState: StateWithActions): ActionRowBu
 
   const style = currentStepAction === PickBanStepAction.MapPick ? ButtonStyle.Success : ButtonStyle.Danger;
 
-  if (pickBanState.availableMaps.length > 25) {
+  if (availableMaps.length > 25) {
     throw new Error(
-      `Too many available maps (${pickBanState.availableMaps.length}) for pick/ban state ${pickBanState.id} to create buttons`,
+      `Too many available maps (${availableMaps.length}) for pick/ban state ${pickBanState.id} to create buttons`,
     );
   }
 
-  for (const mapName of pickBanState.availableMaps) {
+  for (const mapName of availableMaps) {
     if (row.components.length === 5) {
       rows.push(row);
       row = new ActionRowBuilder<ButtonBuilder>();

@@ -8,14 +8,14 @@ import {
 } from "discord.js";
 import { buildPickBanButtons } from "../../components/buildPickBanButtons";
 import { buildPickBanEmbed } from "../../components/buildPickBanEmbed";
-import { MAP_POOL, PICK_BAN_CONFIGS } from "../../constants";
+import { PICK_BAN_CONFIGS } from "../../constants";
 import {
   createPickBanState,
   deleteOrphanedPickBanState,
   getActivePickBanState,
   updateTurnNotificationMessageId,
 } from "../../db/pickBanState";
-import type { PickBanFormat, WorldOfTanksMapName } from "../../generated/prisma/client";
+import type { PickBanFormat } from "../../generated/prisma/client";
 import { createDiscordChannel } from "../../lib/createDiscordChannel";
 import { getTurnNotificationContent } from "../../lib/pickban/getTurnNotificationContent";
 import { verifyChannelPermissions } from "../../lib/verifyDiscordPermissions";
@@ -85,14 +85,12 @@ export async function executeStart(
 
   try {
     pickBanMessage = await channelToUse.send({ content: "Initializing pick/ban session..." });
-
     const newState = await createPickBanState({
       channelId: channelToUse.id,
       guildId: guild.id,
       format,
       teamACaptainId: captainA.id,
       teamBCaptainId: captainB.id,
-      availableMaps: Object.keys(MAP_POOL) as WorldOfTanksMapName[],
       pickBanMessageId: pickBanMessage.id,
     });
 
