@@ -1,10 +1,8 @@
 import { MessageFlags } from "discord.js";
 import { createDraftSessionWithPlayers, getActiveDraftSession } from "../../db/draftSession";
 import type { PlayerDraftSessionCreateInput } from "../../generated/prisma/models";
-import { parseRoster } from "../../lib/draft/parseRoster";
-import { resolveRoster } from "../../lib/draft/resolveRoster";
+import { parseRoster, resolveRoster, validateRoster } from "../../lib/draft/roster";
 import { getRandomTankNames } from "../../lib/draft/tankNames";
-import { validateRoster } from "../../lib/draft/validateRoster";
 import { isDraftType } from "../../lib/guards";
 import { truncateReply } from "../../lib/truncateReply";
 import type { GuildChatInputCommandInteraction } from "../../types";
