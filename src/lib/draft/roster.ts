@@ -1,18 +1,16 @@
 import { parse } from "csv-parse/sync";
 import type { Guild } from "discord.js";
-import { rosterFalsyValues, rosterTruthyValues, validRegions } from "../../constants";
+import { rosterFalsyValues, rosterTruthyValues } from "../../constants";
+import type { WotRegion } from "../../generated/prisma/enums";
+import { isWotRegion } from "../guards";
+import { Prisma } from "../../generated/prisma/browser";
 
-export interface RosterRow {
+export interface CsvRow {
   discordUsername: string;
   tomatoggLink: string;
   isCaptain: string;
   isLegionnaire: string;
   liquipediaLink: string;
-}
-
-export interface ParseRosterResult {
-  rows: RosterRow[];
-  errors: string[];
 }
 
 export interface ResolvedPlayer {
@@ -21,45 +19,7 @@ export interface ResolvedPlayer {
   worldOfTanksId: string;
   isCaptain: boolean;
   isLegionnaire: boolean;
-  wotAccountRegion: string;
-}
-
-function isTruthy(value: string): boolean {
-  return rosterTruthyValues.has(value.toLowerCase());
-}
-
-function isFalsy(value: string): boolean {
-  return rosterFalsyValues.has(value.toLowerCase());
-}
-
-function parseTomatoUrl(url: string): { worldOfTanksId: string; wotAccountRegion: string } | null {
-  try {
-    const parts = new URL(url).pathname.split("/").filter(Boolean);
-    // /stats/${inGameName}-${worldOfTanksId}/${wotAccountRegion}
-    if (parts.length < 3 || parts[0] !== "stats") {
-      return null;
-    }
-
-    const slug = parts[1];
-    const region = parts[2];
-
-    if (!region || !slug) {
-      return null;
-    }
-
-    const lastHyphen = slug.lastIndexOf("-");
-    if (lastHyphen === -1) {
-      return null;
-    }
-
-    if (!validRegions.has(region.toLowerCase())) {
-      return null;
-    }
-
-    return { worldOfTanksId: slug.slice(lastHyphen + 1), wotAccountRegion: region };
-  } catch {
-    return null;
-  }
+  wotAccountRegion: WotRegion;
 }
 
 const COLUMNS = {
@@ -72,40 +32,69 @@ const COLUMNS = {
 
 const REQUIRED_COLUMNS = Object.values(COLUMNS);
 
+function isTruthy(value: string): boolean {
+  return rosterTruthyValues.has(value.toLowerCase());
+}
+
+function isFalsy(value: string): boolean {
+  return rosterFalsyValues.has(value.toLowerCase());
+}
+
+function parseTomatoUrl(url: string): { worldOfTanksId: string; wotAccountRegion: WotRegion } | null {
+  try {
+    const parts = new URL(url).pathname.split("/").filter(Boolean);
+    // /stats/${inGameName}-${worldOfTanksId}/${wotAccountRegion}
+    if (parts.length < 3 || parts[0] !== "stats") {
+      return null;
+    }
+
+    const slug = parts[1];
+    const rawRegion = parts[2];
+
+    if (!rawRegion || !slug) {
+      return null;
+    }
+
+    const lastHyphen = slug.lastIndexOf("-");
+    if (lastHyphen === -1) {
+      return null;
+    }
+
+    const region = rawRegion.charAt(0).toUpperCase() + rawRegion.slice(1).toLowerCase();
+    if (!isWotRegion(region)) {
+      return null;
+    }
+
+    return { worldOfTanksId: slug.slice(lastHyphen + 1), wotAccountRegion: region };
+  } catch {
+    return null;
+  }
+}
+
 function cleanField(value: string | undefined): string {
   return (value ?? "").trim().toLowerCase();
 }
 
-export function parseRoster(csvContent: string): ParseRosterResult {
-  let rawRows: Record<string, string>[];
-  try {
-    rawRows = parse(csvContent, {
-      columns: true,
-      skip_empty_lines: true,
-      trim: true,
-      bom: true,
-    });
-  } catch (err) {
-    return {
-      rows: [],
-      errors: [`Failed to parse CSV: ${err instanceof Error ? err.message : String(err)}`],
-    };
-  }
+export function parseRoster(csvContent: string): CsvRow[]
+ {
+  const rawRows: Record<string, string>[] = parse(csvContent, {
+    columns: true,
+    skip_empty_lines: true,
+    trim: true,
+    bom: true,
+  });
 
   if (rawRows.length === 0) {
-    return { rows: [], errors: [] };
+    return [];
   }
 
   const presentColumns = Object.keys(rawRows[0] ?? {});
   const missingColumns = REQUIRED_COLUMNS.filter((col) => !presentColumns.includes(col));
   if (missingColumns.length > 0) {
-    return {
-      rows: [],
-      errors: [`CSV is missing required columns: ${missingColumns.map((column) => `\`${column}\``).join(", ")}`],
-    };
+    throw new Error(`CSV is missing required columns: ${missingColumns.map((column) => `\`${column}\``).join(", ")}`);
   }
 
-  const rows: RosterRow[] = rawRows.map((row) => ({
+  const rows: CsvRow[] = rawRows.map((row) => ({
     discordUsername: cleanField(row[COLUMNS.discordUsername]),
     tomatoggLink: cleanField(row[COLUMNS.tomatoggLink]),
     isCaptain: cleanField(row[COLUMNS.isCaptain]),
@@ -113,55 +102,40 @@ export function parseRoster(csvContent: string): ParseRosterResult {
     liquipediaLink: cleanField(row[COLUMNS.liquipediaLink]),
   }));
 
-  return { rows, errors: [] };
+  return rows
 }
 
-export function validateRoster(rows: RosterRow[], numTeams: number, numPlayersPerTeam: number): string[] {
+function validateCounts(players: { isCaptain: boolean }[], numTeams: number, numPlayersPerTeam: number): string[] {
   const errors: string[] = [];
-
-  rows.forEach((row, index) => {
-    const { discordUsername, tomatoggLink, isCaptain, isLegionnaire } = row;
-    const rowNumber = index + 2; // +2 to account for header and 0-indexing
-    const errorPrefix = `Row ${rowNumber}:`;
-
-    if (!discordUsername) {
-      errors.push(`${errorPrefix} Missing value for \`Discord Username\`.`);
-    }
-
-    if (!tomatoggLink) {
-      errors.push(`${errorPrefix} Missing value for \`Tomatogg Link\`.`);
-    }
-
-    if (!isFalsy(isCaptain) && !isTruthy(isCaptain)) {
-      errors.push(`${errorPrefix} Invalid value for \`Is Captain\`.`);
-    }
-
-    if (!isFalsy(isLegionnaire) && !isTruthy(isLegionnaire)) {
-      errors.push(`${errorPrefix} Invalid value for \`Is Legionnaire\`.`);
-    }
-  });
-
-  const captains = rows.filter((r) => isTruthy(r.isCaptain));
+  const captainCount = players.filter((p) => p.isCaptain).length;
   const expectedNumPlayers = numTeams * numPlayersPerTeam;
 
-  if (captains.length !== numTeams) {
-    errors.push(`There must be exactly ${numTeams} captains, but ${captains.length} were found.`);
+  if (captainCount !== numTeams) {
+    errors.push(`There must be exactly ${numTeams} captains, but ${captainCount} were found.`);
   }
 
-  if (rows.length !== expectedNumPlayers) {
-    errors.push(`There must be exactly ${expectedNumPlayers} players, but ${rows.length} were found.`);
+  if (players.length !== expectedNumPlayers) {
+    errors.push(`There must be exactly ${expectedNumPlayers} players, but ${players.length} were found.`);
   }
 
   return errors;
 }
 
+export function validateDraftPlayers(
+  players: { isCaptain: boolean }[],
+  numTeams: number,
+  numPlayersPerTeam: number,
+): string[] {
+  return validateCounts(players, numTeams, numPlayersPerTeam);
+}
+
 export async function resolveRoster(
   guild: Guild,
-  players: RosterRow[],
-): Promise<{ resolved: ResolvedPlayer[]; errors: string[] }> {
+  players: CsvRow[],
+): Promise<{ resolved: Prisma.DraftPlayerCreateManySessionInput[]; errors: string[] }> {
   const members = await guild.members.fetch();
   const errors: string[] = [];
-  const resolved: ResolvedPlayer[] = [];
+  const resolved: Prisma.DraftPlayerCreateManySessionInput[] = [];
   players.forEach((player, index) => {
     const rowNumber = index + 2; // +2 to account for header and 0-indexing
     const errorPrefix = `Row ${rowNumber} (${player.discordUsername}):`;
