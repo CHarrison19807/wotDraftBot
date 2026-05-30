@@ -2,8 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
   previewFeatures = ["partialIndexes"]
 }
 
@@ -49,7 +49,9 @@ enum PickBanFormat {
 }
 
 enum Status {
+  Pending
   Active
+  Paused
   Cancelled
   Complete
 }
@@ -60,63 +62,71 @@ enum DraftType {
   Auction
 }
 
+enum WotRegion {
+  Na
+  Eu
+  Asia
+}
+
 model GuildConfig {
-  guildId                  String  @id
-  pickBanResultsChannelId  String?
+  guildId                 String  @id
+  pickBanResultsChannelId String?
 }
 
 model PickBanState {
-  id                         String        @id @default(cuid())
-  channelId                  String
-  guildId                    String
-  format                     PickBanFormat
-  teamACaptainId             String
-  teamBCaptainId             String
-  deciderMap                 WorldOfTanksMapName?
-  currentStepIndex           Int           @default(0)
-  status                     Status        @default(Active)
-  pickBanMessageId           String
-  turnNotificationMessageId  String?
-  actions                    PickBanAction[]
-  createdAt                  DateTime      @default(now())
-  updatedAt                  DateTime      @updatedAt
+  id                        String               @id @default(cuid())
+  channelId                 String
+  guildId                   String
+  format                    PickBanFormat
+  teamACaptainId            String
+  teamBCaptainId            String
+  deciderMap                WorldOfTanksMapName?
+  currentStepIndex          Int                  @default(0)
+  status                    Status               @default(Active)
+  pickBanMessageId          String
+  turnNotificationMessageId String?
+  actions                   PickBanAction[]
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
 
   @@unique([channelId, status], map: "unique_active_channel", where: { status: "Active" })
 }
 
 model PlayerDraftSession {
-  id                    String        @id @default(cuid())
-  guildId               String
-  numTeams              Int
-  numPlayersPerTeam     Int
-  draftType             DraftType
-  status                Status   @default(Active)
-  currentPickIndex      Int           @default(0)
-  draftMessageId        String?
-  draftChannelId        String?
-  teams                 DraftTeam[]
-  players               DraftPlayer[]
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
+  id                String        @id @default(cuid())
+  guildId           String
+  numTeams          Int?
+  numPlayersPerTeam Int?
+  draftType         DraftType?
+  status            Status        @default(Active)
+  currentPickIndex  Int           @default(0)
+  draftMessageId    String?
+  draftChannelId    String?
+  teams             DraftTeam[]
+  players           DraftPlayer[]
+  auctionLots       AuctionLot[]
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@unique([guildId], map: "unique_active_or_pending_session_per_user", where: raw("status IN ('Active', 'Pending')"))
 }
 
 model DraftTeam {
-  id             Int                @id @default(autoincrement())
-  session        PlayerDraftSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  sessionId      String
-  name           String  
-
-  // TODO rename to captainDiscordId or something           
-  captainId      String             
-  pickOrder      Int? 
-  // TODO textChannelId              
-  channelId      String?            
-  voiceChannelId String?           
-  players        DraftPlayer[]
+  id               Int                @id @default(autoincrement())
+  session          PlayerDraftSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId        String
+  name             String
+  captainDiscordId String
+  pickOrder        Int?
+  textChannelId    String?
+  voiceChannelId   String?
+  players          DraftPlayer[]
+  budget           Int?
+  bids             AuctionBid[]
 
   @@unique([sessionId, pickOrder])
   @@unique([sessionId, name])
-  @@unique([sessionId, captainId])
+  @@unique([sessionId, captainDiscordId])
 }
 
 model DraftPlayer {
@@ -124,23 +134,50 @@ model DraftPlayer {
   session          PlayerDraftSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   sessionId        String
   discordUsername  String
-  discordUserId    String             
+  discordUserId    String
   worldOfTanksId   String
   isCaptain        Boolean            @default(false)
   isLegionnaire    Boolean            @default(false)
-  wotAccountRegion String
+  wotAccountRegion WotRegion
   team             DraftTeam?         @relation(fields: [teamId], references: [id], onDelete: Restrict)
-  teamId           Int?               
-  pickNumber       Int?              
+  teamId           Int?
+  pickNumber       Int?
+  auctionLots      AuctionLot[]
 
+  @@unique([sessionId, discordUserId])
   @@unique([sessionId, worldOfTanksId])
   @@unique([sessionId, discordUsername])
   @@unique([sessionId, pickNumber])
 }
 
+model AuctionLot {
+  id          Int                @id @default(autoincrement())
+  session     PlayerDraftSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId   String
+  player      DraftPlayer        @relation(fields: [playerId], references: [id], onDelete: Restrict)
+  playerId    Int
+  lotOrder    Float
+  status      Status             @default(Pending)
+  messageId   String?
+  bids        AuctionBid[]
+
+  @@unique([sessionId, lotOrder])
+  @@unique([sessionId], map: "unique_active_lot", where: { status: "Active" })
+}
+
+model AuctionBid {
+  id       Int        @id @default(autoincrement())
+  lot      AuctionLot @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  lotId    Int
+  team     DraftTeam  @relation(fields: [teamId], references: [id], onDelete: Restrict)
+  teamId   Int
+  amount   Int
+  placedAt DateTime   @default(now())
+}
+
 model PickBanAction {
-  id         Int               @id @default(autoincrement())
-  state      PickBanState      @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  id         Int                 @id @default(autoincrement())
+  state      PickBanState        @relation(fields: [stateId], references: [id], onDelete: Cascade)
   stateId    String
   action     PickBanStepAction
   actingTeam ActingTeam
