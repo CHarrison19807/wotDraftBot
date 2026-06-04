@@ -1,9 +1,9 @@
 import { parse } from "csv-parse/sync";
 import type { Guild } from "discord.js";
-import { rosterFalsyValues, rosterTruthyValues } from "../../constants";
+import { rosterTruthyValues } from "../../constants";
+import type { Prisma } from "../../generated/prisma/browser";
 import type { WotRegion } from "../../generated/prisma/enums";
 import { isWotRegion } from "../guards";
-import { Prisma } from "../../generated/prisma/browser";
 
 export interface CsvRow {
   discordUsername: string;
@@ -34,10 +34,6 @@ const REQUIRED_COLUMNS = Object.values(COLUMNS);
 
 function isTruthy(value: string): boolean {
   return rosterTruthyValues.has(value.toLowerCase());
-}
-
-function isFalsy(value: string): boolean {
-  return rosterFalsyValues.has(value.toLowerCase());
 }
 
 function parseTomatoUrl(url: string): { worldOfTanksId: string; wotAccountRegion: WotRegion } | null {
@@ -75,8 +71,7 @@ function cleanField(value: string | undefined): string {
   return (value ?? "").trim().toLowerCase();
 }
 
-export function parseRoster(csvContent: string): CsvRow[]
- {
+export function parseRoster(csvContent: string): CsvRow[] {
   const rawRows: Record<string, string>[] = parse(csvContent, {
     columns: true,
     skip_empty_lines: true,
@@ -102,7 +97,7 @@ export function parseRoster(csvContent: string): CsvRow[]
     liquipediaLink: cleanField(row[COLUMNS.liquipediaLink]),
   }));
 
-  return rows
+  return rows;
 }
 
 function validateCounts(players: { isCaptain: boolean }[], numTeams: number, numPlayersPerTeam: number): string[] {

@@ -2,6 +2,7 @@ import { MessageFlags } from "discord.js";
 import { buildPlayerCardConfirmButton } from "../../components/buildDraftButtons";
 import { buildPlayerCard } from "../../components/buildPlayerCard";
 import { getActiveDraftSession } from "../../db/draftSession";
+import { DraftType } from "../../generated/prisma/enums";
 import { getCurrentTeamIndex, isDraftPickable } from "../../lib/draft/getDraftTurn";
 import type { GuildChatInputCommandInteraction } from "../../types";
 
@@ -9,12 +10,17 @@ export async function executePick(interaction: GuildChatInputCommandInteraction)
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   const session = await getActiveDraftSession(interaction.guild.id);
-  if (!session) {
+  if (!session?.numPlayersPerTeam || !session.numTeams) {
     await interaction.editReply("No active draft session.");
     return;
   }
   if (!isDraftPickable(session)) {
     await interaction.editReply("The draft hasn't started yet or has already ended.");
+    return;
+  }
+
+  if (session.draftType !== DraftType.Snake && session.draftType !== DraftType.Regular) {
+    await interaction.editReply("Unsupported draft type.");
     return;
   }
 
@@ -26,8 +32,8 @@ export async function executePick(interaction: GuildChatInputCommandInteraction)
     return;
   }
 
-  if (interaction.user.id !== currentTeam.captainId) {
-    await interaction.editReply(`Unable to pick. Waiting on <@${currentTeam.captainId}> to make their pick.`);
+  if (interaction.user.id !== currentTeam.captainDiscordId) {
+    await interaction.editReply(`Unable to pick. Waiting on <@${currentTeam.captainDiscordId}> to make their pick.`);
     return;
   }
   const pickedUser = interaction.options.getUser("player", true);

@@ -9,6 +9,9 @@ type DraftSessionWithDetails = PlayerDraftSession & {
 
 export function buildDraftEmbed(session: DraftSessionWithDetails): EmbedBuilder {
   const { teams, players, currentPickIndex, numTeams, numPlayersPerTeam, draftType } = session;
+  if (!numTeams || !numPlayersPerTeam || !draftType) {
+    throw new Error("Session is missing required fields");
+  }
   const total = totalDraftPicks(numTeams, numPlayersPerTeam);
   const done = isDraftComplete(currentPickIndex, numTeams, numPlayersPerTeam);
 
@@ -36,7 +39,7 @@ export function buildDraftEmbed(session: DraftSessionWithDetails): EmbedBuilder 
     .setDescription(
       done
         ? "All players have been drafted."
-        : `<@${currentTeam?.captainId}>'s turn to pick, use \`/draft pick\` to select a player`,
+        : `<@${currentTeam?.captainDiscordId}>'s turn to pick, use \`/draft pick\` to select a player`,
     )
     .setFooter({
       text: `${total - currentPickIndex} picks remaining`,

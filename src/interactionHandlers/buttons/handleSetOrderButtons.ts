@@ -38,7 +38,7 @@ export async function handleSetOrderConfirm(interaction: ButtonInteraction) {
   const orderLines = currentOrder
     .map((captainId, index) => {
       const captain = captains.find((captain) => captain.discordUserId === captainId);
-      const team = session.teams.find((team) => team.captainId === captainId);
+      const team = session.teams.find((team) => team.captainDiscordId === captainId);
 
       return `${index + 1}. ${team ? `**${team.name}** - ` : ""}<@${captainId}>${captain ? ` (${captain.discordUsername})` : ""}`;
     })

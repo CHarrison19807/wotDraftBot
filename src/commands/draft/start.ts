@@ -76,7 +76,7 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
     createdChannelIds.push(captainChannel.id);
 
     for (const team of teams) {
-      const captain = captains.find((player) => player.discordUserId === team.captainId);
+      const captain = captains.find((player) => player.discordUserId === team.captainDiscordId);
       const initialMembers = captain ? [{ id: captain.discordUserId, type: OverwriteType.Member }] : [];
 
       const textChannel = await createDiscordChannel(

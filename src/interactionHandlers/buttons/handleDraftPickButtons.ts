@@ -18,7 +18,14 @@ export async function handleDraftPickConfirm(interaction: ButtonInteraction) {
     const playerId = Number.parseInt(playerIdStr);
     const session = await getActiveDraftSession(interaction.guildId);
 
-    if (!session || session.id !== sessionId || !isDraftPickable(session)) {
+    if (
+      !session ||
+      session.id !== sessionId ||
+      !isDraftPickable(session) ||
+      !session.numTeams ||
+      !session.numPlayersPerTeam ||
+      !session.draftType
+    ) {
       await interaction.editReply({ content: "This draft is no longer active.", embeds: [], components: [] });
       return;
     }
@@ -26,7 +33,7 @@ export async function handleDraftPickConfirm(interaction: ButtonInteraction) {
     const teamIndex = getCurrentTeamIndex(session.currentPickIndex, session.numTeams, session.draftType);
     const currentTeam = session.teams[teamIndex];
 
-    if (!currentTeam || interaction.user.id !== currentTeam.captainId) {
+    if (!currentTeam || interaction.user.id !== currentTeam.captainDiscordId) {
       await interaction.editReply({ content: "It's not your turn to pick.", embeds: [], components: [] });
       return;
     }
@@ -42,11 +49,15 @@ export async function handleDraftPickConfirm(interaction: ButtonInteraction) {
     }
 
     const updatedSession = await recordPick(session.id, playerId, currentTeam.id);
+    if (!updatedSession.numTeams || !updatedSession.numPlayersPerTeam || !updatedSession.draftType) {
+      await interaction.editReply({ content: "Draft session data is invalid.", embeds: [], components: [] });
+      return;
+    }
 
     // Grant picked player access to their team's channels
     if (interaction.guild) {
       const team = updatedSession.teams.find((t) => t.id === currentTeam.id);
-      const channelIds = [team?.channelId, team?.voiceChannelId].filter((id): id is string => !!id);
+      const channelIds = [team?.textChannelId, team?.voiceChannelId].filter((id): id is string => !!id);
       for (const channelId of channelIds) {
         try {
           const channel = interaction.guild.channels.cache.get(channelId) as TextChannel | VoiceChannel;
@@ -87,7 +98,7 @@ export async function handleDraftPickConfirm(interaction: ButtonInteraction) {
           const nextTeam = updatedSession.teams[nextTeamIndex];
           if (nextTeam) {
             await draftChannel.send(
-              `<@${nextTeam.captainId}>, it's your pick for **${nextTeam.name}**. Use \`/draft pick @player\`.`,
+              `<@${nextTeam.captainDiscordId}>, it's your pick for **${nextTeam.name}**. Use \`/draft pick @player\`.`,
             );
           }
         }

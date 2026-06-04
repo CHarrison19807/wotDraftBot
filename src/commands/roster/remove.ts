@@ -1,4 +1,4 @@
-import { deleteDraftPlayer, getDraftPlayerByDiscordId } from "../../db/draftPlayer";
+import { deleteDraftPlayer } from "../../db/draftPlayer";
 import { getPendingDraftSession } from "../../db/draftSession";
 import type { GuildChatInputCommandInteraction } from "../../types";
 

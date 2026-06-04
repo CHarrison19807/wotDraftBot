@@ -70,7 +70,7 @@ export async function createDraftSessionWithPlayers(
     await tx.draftPlayer.createMany({
       data: playersData.map((p) => ({ ...p, sessionId: session.id })),
     });
-    });
+  });
 }
 
 export async function addPlayersToPendingSession(
@@ -116,7 +116,7 @@ export async function startDraftSession(sessionId: string, draftChannelId: strin
 
     return tx.playerDraftSession.update({
       where: { id: sessionId },
-      data: { draftChannelId, draftMessageId,status: Status.Active },
+      data: { draftChannelId, draftMessageId, status: Status.Active },
     });
   });
 }

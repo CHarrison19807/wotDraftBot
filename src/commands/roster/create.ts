@@ -5,8 +5,7 @@ import {
   getPendingDraftSession,
 } from "../../db/draftSession";
 import { Status } from "../../generated/prisma/client";
-import { CsvRow, parseRoster, resolveRoster } from "../../lib/draft/roster";
-import { getRandomTankNames } from "../../lib/draft/tankNames";
+import { type CsvRow, parseRoster, resolveRoster } from "../../lib/draft/roster";
 import { truncateReply } from "../../lib/truncateReply";
 import type { GuildChatInputCommandInteraction } from "../../types";
 
@@ -24,7 +23,7 @@ export async function executeCreate(interaction: GuildChatInputCommandInteractio
 
   try {
     rosterRows = parseRoster(csvContent);
-  } catch (error) {
+  } catch {
     await interaction.editReply("Failed to parse the roster CSV.");
     return;
   }

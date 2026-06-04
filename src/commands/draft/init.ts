@@ -63,9 +63,9 @@ export async function executeInit(interaction: GuildChatInputCommandInteraction)
   const teamNames = await getRandomTankNames(numTeams);
   const captainRows = resolved.filter((player) => player.isCaptain);
 
-  const teamData = captainRows.map((captain, i): { name: string; captainId: string } => ({
+  const teamData = captainRows.map((captain, i): { name: string; captainDiscordId: string } => ({
     name: teamNames[i] ?? `Team ${i + 1}`,
-    captainId: captain.discordUserId,
+    captainDiscordId: captain.discordUserId,
   }));
 
   const session: PlayerDraftSessionCreateInput = {
