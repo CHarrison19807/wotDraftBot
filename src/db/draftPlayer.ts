@@ -22,5 +22,5 @@ export async function upsertDraftPlayer(playerData: Prisma.DraftPlayerUncheckedC
 }
 
 export async function deleteDraftPlayer(sessionId: string, discordUserId: string) {
-  return prisma.draftPlayer.delete({ where: { sessionId_discordUserId: { sessionId, discordUserId } } });
+  return prisma.draftPlayer.deleteMany({ where: { sessionId, discordUserId } });
 }

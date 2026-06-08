@@ -54,7 +54,7 @@ export const execute = async (interaction: ChatInputCommandInteraction) => {
   if (ADMIN_SUBCOMMANDS.has(subcommand)) {
     if (!verifiedInteraction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
       await verifiedInteraction.reply({
-        content: "You need Administrator permission to use this command.",
+        content: "You need Administrator permissions to use this command.",
         flags: MessageFlags.Ephemeral,
       });
       return;

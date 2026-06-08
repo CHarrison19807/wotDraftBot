@@ -1,5 +1,5 @@
 import {
-  addPlayersToPendingSession,
+  addPlayersToExistingSession,
   createDraftSessionWithPlayers,
   getActiveDraftSession,
   getPendingDraftSession,
@@ -44,7 +44,13 @@ export async function executeCreate(interaction: GuildChatInputCommandInteractio
   const pendingSession = await getPendingDraftSession(interaction.guild.id);
 
   if (pendingSession) {
-    await addPlayersToPendingSession(pendingSession.id, resolved);
+    try {
+      await addPlayersToExistingSession(pendingSession.id, resolved);
+    } catch (error) {
+      console.error("Error adding players to existing session:", error);
+      await interaction.editReply("An error occurred while adding players to the session. Please try again.");
+      return;
+    }
     await interaction.editReply(`Added ${resolved.length} players to the existing session.`);
     return;
   }
@@ -55,7 +61,13 @@ export async function executeCreate(interaction: GuildChatInputCommandInteractio
     return;
   }
 
-  await createDraftSessionWithPlayers({ guildId: interaction.guild.id, status: Status.Pending }, resolved);
+  try {
+    await createDraftSessionWithPlayers({ guildId: interaction.guild.id, status: Status.Pending }, resolved);
+  } catch (error) {
+    console.error("Error creating draft session:", error);
+    await interaction.editReply("An error occurred while creating the session. Please try again.");
+    return;
+  }
 
   await interaction.editReply(`Session created with ${resolved.length} players.`);
 }

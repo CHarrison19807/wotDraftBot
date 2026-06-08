@@ -10,10 +10,15 @@ import { handleFinish } from "../../pickBanFlow/handleFinish";
 import { postPickBanResult } from "../../pickBanFlow/postPickBanResult";
 
 export async function handlePickBanButton(interaction: ButtonInteraction) {
+  await interaction.deferUpdate();
+
   const state = await getActivePickBanState(interaction.channelId);
 
   if (!state) {
-    await interaction.reply({ content: "No active pick/ban session in this channel.", flags: MessageFlags.Ephemeral });
+    await interaction.followUp({
+      content: "No active pick/ban session in this channel.",
+      flags: MessageFlags.Ephemeral,
+    });
     return;
   }
 
@@ -22,14 +27,14 @@ export async function handlePickBanButton(interaction: ButtonInteraction) {
   const currentStep = steps[currentStepIndex];
 
   if (!currentStep) {
-    await interaction.reply({ content: "Invalid pick/ban step.", flags: MessageFlags.Ephemeral });
+    await interaction.followUp({ content: "Invalid pick/ban step.", flags: MessageFlags.Ephemeral });
     return;
   }
 
   const expectedCaptainId = currentStep.actingTeam === ActingTeam.TeamA ? teamACaptainId : teamBCaptainId;
 
   if (interaction.user.id !== expectedCaptainId) {
-    await interaction.reply({
+    await interaction.followUp({
       content: `Only <@${expectedCaptainId}> can perform this action.`,
       flags: MessageFlags.Ephemeral,
     });
@@ -38,11 +43,9 @@ export async function handlePickBanButton(interaction: ButtonInteraction) {
 
   const [buttonAction] = interaction.customId.split(":");
   if (buttonAction !== currentStep.action) {
-    await interaction.reply({ content: "This button is no longer valid.", flags: MessageFlags.Ephemeral });
+    await interaction.followUp({ content: "This button is no longer valid.", flags: MessageFlags.Ephemeral });
     return;
   }
-
-  await interaction.deferUpdate();
 
   const isLastStep = currentStepIndex + 1 >= steps.length;
   const updatedState = await handleAction(interaction, state);

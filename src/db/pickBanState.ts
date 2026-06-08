@@ -8,13 +8,10 @@ export async function cancelPickBanState(channelId: string) {
   });
 }
 
-export async function createPickBanState(data: Prisma.PickBanStateUncheckedCreateInput) {
-  return prisma.$transaction(async (tx) => {
-    const existing = await tx.pickBanState.findFirst({
-      where: { channelId: data.channelId, status: Status.Active },
-    });
-    if (existing) throw new Error("Active session already exists in this channel.");
-    return tx.pickBanState.create({ data, include: { actions: { orderBy: { id: "asc" } } } });
+export async function createPickBanState(data: Prisma.PickBanStateCreateInput) {
+  return prisma.pickBanState.create({
+    data,
+    include: { actions: { orderBy: { id: "asc" } } },
   });
 }
 

@@ -73,14 +73,14 @@ export async function createDraftSessionWithPlayers(
   });
 }
 
-export async function addPlayersToPendingSession(
+export async function addPlayersToExistingSession(
   sessionId: string,
   playersData: Prisma.DraftPlayerCreateManySessionInput[],
 ) {
   return prisma.$transaction(async (tx) => {
-    const pendingSession = await getPendingDraftSession(sessionId);
-    if (!pendingSession) throw new Error("No pending session found with the provided ID.");
-    if (pendingSession.status !== Status.Pending) throw new Error("Session is not in pending state.");
+    const session = await tx.playerDraftSession.findUnique({ where: { id: sessionId } });
+    if (!session) throw new Error("No session found with the provided ID.");
+    if (session.status !== Status.Pending) throw new Error("Session is not in pending state.");
 
     await tx.draftPlayer.createMany({
       data: playersData.map((p) => ({ ...p, sessionId })),
@@ -95,20 +95,26 @@ export async function startDraftSession(
   numTeams: number,
   numPlayersPerTeam: number,
   draftType: DraftType,
+  teamsData: Prisma.DraftTeamCreateManyInput[],
 ) {
   return prisma.$transaction(async (tx) => {
-    const session = await tx.playerDraftSession.findUnique({
-      where: { id: sessionId },
-      include: { teams: true, players: { where: { isCaptain: true } } },
-    });
-    if (!session) throw new Error("Session not found");
-
-    for (const team of session.teams) {
-      const captain = session.players.find((p) => p.discordUserId === team.captainDiscordId);
-      if (captain) {
-        await tx.draftPlayer.update({ where: { id: captain.id }, data: { teamId: team.id } });
-      }
-    }
+    await Promise.all(
+      teamsData.map((team) =>
+        tx.draftTeam.create({
+          data: {
+            name: team.name,
+            captainDiscordId: team.captainDiscordId,
+            pickOrder: team.pickOrder,
+            textChannelId: team.textChannelId,
+            voiceChannelId: team.voiceChannelId,
+            session: { connect: { id: sessionId } },
+            players: {
+              connect: { sessionId_discordUserId: { sessionId, discordUserId: team.captainDiscordId } },
+            },
+          },
+        }),
+      ),
+    );
 
     return tx.playerDraftSession.update({
       where: { id: sessionId },

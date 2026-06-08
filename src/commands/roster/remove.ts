@@ -11,9 +11,17 @@ export async function executeRemove(interaction: GuildChatInputCommandInteractio
   }
 
   const user = interaction.options.getUser("player", true);
-  const deletedPlayer = await deleteDraftPlayer(pendingSession.id, user.id);
 
-  if (!deletedPlayer) {
+  let deletedPlayer: { count: number };
+  try {
+    deletedPlayer = await deleteDraftPlayer(pendingSession.id, user.id);
+  } catch (error) {
+    console.error("Error removing draft player:", error);
+    await interaction.editReply("An error occurred while removing the player. Please try again.");
+    return;
+  }
+
+  if (deletedPlayer.count === 0) {
     await interaction.editReply(`Player <@${user.id}> is not part of the pending draft session.`);
     return;
   }

@@ -105,6 +105,11 @@ export function validateRosterCounts(players: { isCaptain: boolean }[]): string[
   const captainCount = players.filter((p) => p.isCaptain).length;
   const playerCount = players.length;
 
+  if (captainCount === 0) {
+    errors.push("The roster must have at least one captain.");
+    return errors;
+  }
+
   if (playerCount % captainCount !== 0) {
     errors.push(
       `The number of players (${playerCount}) must be divisible by the number of captains (${captainCount}).`,

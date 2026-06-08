@@ -18,15 +18,21 @@ export async function executeAdd(interaction: GuildChatInputCommandInteraction) 
   const isCaptain = interaction.options.getBoolean("is_captain") ?? false;
   const isLegionnaire = interaction.options.getBoolean("is_legionnaire") ?? false;
 
-  await upsertDraftPlayer({
-    sessionId: pendingSession.id,
-    discordUserId: user.id,
-    discordUsername: user.username,
-    worldOfTanksId,
-    isCaptain,
-    isLegionnaire,
-    wotAccountRegion,
-  });
+  try {
+    await upsertDraftPlayer({
+      sessionId: pendingSession.id,
+      discordUserId: user.id,
+      discordUsername: user.username,
+      worldOfTanksId,
+      isCaptain,
+      isLegionnaire,
+      wotAccountRegion,
+    });
+  } catch (error) {
+    console.error("Error adding draft player:", error);
+    await interaction.editReply("An error occurred while adding the player. Please try again.");
+    return;
+  }
 
   await interaction.editReply(`Player <@${user.id}> added to the draft session.`);
 }

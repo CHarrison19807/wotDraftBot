@@ -1,4 +1,4 @@
-import { type ButtonInteraction, MessageFlags, type TextChannel, type VoiceChannel } from "discord.js";
+import { type ButtonInteraction, GuildChannel, MessageFlags, TextChannel } from "discord.js";
 import { buildDraftEmbed } from "../../components/buildDraftEmbed";
 import { getActiveDraftSession, recordPick } from "../../db/draftSession";
 import { getCurrentTeamIndex, isDraftComplete, isDraftPickable } from "../../lib/draft/getDraftTurn";
@@ -60,8 +60,9 @@ export async function handleDraftPickConfirm(interaction: ButtonInteraction) {
       const channelIds = [team?.textChannelId, team?.voiceChannelId].filter((id): id is string => !!id);
       for (const channelId of channelIds) {
         try {
-          const channel = interaction.guild.channels.cache.get(channelId) as TextChannel | VoiceChannel;
-          if (channel) await channel.permissionOverwrites.edit(player.discordUserId, { ViewChannel: true });
+          const channel = await interaction.guild.channels.fetch(channelId);
+          if (channel instanceof GuildChannel)
+            await channel.permissionOverwrites.edit(player.discordUserId, { ViewChannel: true });
         } catch (e) {
           console.error(`Failed to grant channel access for ${channelId}:`, e);
         }
@@ -76,7 +77,12 @@ export async function handleDraftPickConfirm(interaction: ButtonInteraction) {
 
     // Update the public draft embed and ping the next captain
     if (session.draftChannelId && session.draftMessageId) {
-      const draftChannel = interaction.client.channels.cache.get(session.draftChannelId) as TextChannel;
+      const fetchedChannel = await interaction.client.channels.fetch(session.draftChannelId).catch(() => null);
+      if (!(fetchedChannel instanceof TextChannel)) {
+        console.error(`Draft channel ${session.draftChannelId} not found or not a text channel`);
+        return;
+      }
+      const draftChannel = fetchedChannel;
       try {
         const msg = await draftChannel.messages.fetch(session.draftMessageId);
         await msg.edit({ embeds: [buildDraftEmbed(updatedSession)] });

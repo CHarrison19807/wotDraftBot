@@ -1,7 +1,6 @@
 import { MessageFlags, PermissionFlagsBits, type TextChannel } from "discord.js";
 import { buildDraftEmbed } from "../../components/buildDraftEmbed";
 import { getPendingDraftSession, startDraftSession } from "../../db/draftSession";
-import { createDraftTeams } from "../../db/draftTeam";
 import type { DraftType } from "../../generated/prisma/enums";
 import { createSessionDiscordChannels } from "../../lib/createSessionDiscordChannels";
 import { validateRosterCounts } from "../../lib/draft/roster";
@@ -79,22 +78,21 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
 
     const draftType = interaction.options.getString("draft_type", true) as DraftType;
 
+    const teamsData = plannedTeams.map((team) => {
+      const channels = channelMap.get(team.captainDiscordId);
+      if (!channels) throw new Error(`Missing channel IDs for captain ${team.captainDiscordId}`);
+      return {
+        sessionId: session.id,
+        name: team.name,
+        captainDiscordId: team.captainDiscordId,
+        pickOrder: team.pickOrder,
+        textChannelId: channels.textChannelId,
+        voiceChannelId: channels.voiceChannelId,
+      };
+    });
+
     const draftChannel = (await guild.channels.fetch(draftChannelId)) as TextChannel;
     const draftMessage = await draftChannel.send({ content: "Setting up draft..." });
-    await createDraftTeams(
-      session.id,
-      plannedTeams.map((team) => {
-        const channels = channelMap.get(team.captainDiscordId);
-        if (!channels) throw new Error(`Missing channel IDs for captain ${team.captainDiscordId}`);
-        return {
-          name: team.name,
-          captainDiscordId: team.captainDiscordId,
-          pickOrder: team.pickOrder,
-          textChannelId: channels.textChannelId,
-          voiceChannelId: channels.voiceChannelId,
-        };
-      }),
-    );
     const updatedSession = await startDraftSession(
       session.id,
       draftChannelId,
@@ -102,6 +100,7 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
       numTeams,
       numPlayersPerTeam,
       draftType,
+      teamsData,
     );
     await draftMessage.edit({ content: "", embeds: [buildDraftEmbed(updatedSession)] });
 
