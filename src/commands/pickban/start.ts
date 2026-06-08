@@ -8,7 +8,7 @@ import {
 } from "discord.js";
 import { buildPickBanButtons } from "../../components/buildPickBanButtons";
 import { buildPickBanEmbed } from "../../components/buildPickBanEmbed";
-import { PICK_BAN_CONFIGS } from "../../constants";
+import { PICK_BAN_CONFIGS, TEXT_CHANNEL_ALLOW } from "../../constants";
 import {
   createPickBanState,
   deleteOrphanedPickBanState,
@@ -16,7 +16,6 @@ import {
   updateTurnNotificationMessageId,
 } from "../../db/pickBanState";
 import type { PickBanFormat } from "../../generated/prisma/client";
-import { createDiscordChannel } from "../../lib/createDiscordChannel";
 import { getTurnNotificationContent } from "../../lib/pickban/getTurnNotificationContent";
 import { verifyChannelPermissions } from "../../lib/verifyDiscordPermissions";
 import type { GuildChatInputCommandInteraction } from "../../types";
@@ -52,14 +51,16 @@ export async function executeStart(
       { id: captainB.id, type: OverwriteType.Member },
     ];
 
-    createdChannel = (await createDiscordChannel(
-      guild,
-      `pickban-${format.toLowerCase()}-${Date.now()}`,
-      ChannelType.GuildText,
-      categoryOption.id,
-      idsWithAccess,
-      true,
-    )) as TextChannel;
+    createdChannel = (await guild.channels.create({
+      name: `pickban-${format.toLowerCase()}-${Date.now()}`,
+      type: ChannelType.GuildText,
+      parent: categoryOption.id,
+      permissionOverwrites: [
+        { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
+        { id: guild.client.user.id, type: OverwriteType.Member, allow: TEXT_CHANNEL_ALLOW },
+        ...idsWithAccess.map((o) => ({ ...o, allow: TEXT_CHANNEL_ALLOW })),
+      ],
+    })) as TextChannel;
   } else {
     const missingPermissions = verifyChannelPermissions(
       [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],

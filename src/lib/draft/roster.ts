@@ -100,28 +100,18 @@ export function parseRoster(csvContent: string): CsvRow[] {
   return rows;
 }
 
-function validateCounts(players: { isCaptain: boolean }[], numTeams: number, numPlayersPerTeam: number): string[] {
+export function validateRosterCounts(players: { isCaptain: boolean }[]): string[] {
   const errors: string[] = [];
   const captainCount = players.filter((p) => p.isCaptain).length;
-  const expectedNumPlayers = numTeams * numPlayersPerTeam;
+  const playerCount = players.length;
 
-  if (captainCount !== numTeams) {
-    errors.push(`There must be exactly ${numTeams} captains, but ${captainCount} were found.`);
-  }
-
-  if (players.length !== expectedNumPlayers) {
-    errors.push(`There must be exactly ${expectedNumPlayers} players, but ${players.length} were found.`);
+  if (playerCount % captainCount !== 0) {
+    errors.push(
+      `The number of players (${playerCount}) must be divisible by the number of captains (${captainCount}).`,
+    );
   }
 
   return errors;
-}
-
-export function validateDraftPlayers(
-  players: { isCaptain: boolean }[],
-  numTeams: number,
-  numPlayersPerTeam: number,
-): string[] {
-  return validateCounts(players, numTeams, numPlayersPerTeam);
 }
 
 export async function resolveRoster(

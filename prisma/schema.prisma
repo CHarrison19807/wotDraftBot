@@ -118,8 +118,8 @@ model DraftTeam {
   name             String
   captainDiscordId String
   pickOrder        Int?
-  textChannelId    String?
-  voiceChannelId   String?
+  textChannelId    String
+  voiceChannelId   String
   players          DraftPlayer[]
   budget           Int?
   bids             AuctionBid[]

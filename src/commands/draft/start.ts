@@ -1,14 +1,12 @@
-import {
-  ChannelType,
-  MessageFlags,
-  OverwriteType,
-  PermissionFlagsBits,
-  type TextChannel,
-  type VoiceChannel,
-} from "discord.js";
+import { MessageFlags, PermissionFlagsBits, type TextChannel } from "discord.js";
 import { buildDraftEmbed } from "../../components/buildDraftEmbed";
-import { getActiveDraftSession, startDraftSession, updateTeamChannelIds } from "../../db/draftSession";
-import { createDiscordChannel } from "../../lib/createDiscordChannel";
+import { getPendingDraftSession, startDraftSession } from "../../db/draftSession";
+import { createDraftTeams } from "../../db/draftTeam";
+import type { DraftType } from "../../generated/prisma/enums";
+import { createSessionDiscordChannels } from "../../lib/createSessionDiscordChannels";
+import { validateRosterCounts } from "../../lib/draft/roster";
+import { getPickOrder } from "../../lib/draft/setOrderState";
+import { getRandomTankNames } from "../../lib/draft/tankNames";
 import type { GuildChatInputCommandInteraction } from "../../types";
 
 export async function executeStart(interaction: GuildChatInputCommandInteraction) {
@@ -23,104 +21,98 @@ export async function executeStart(interaction: GuildChatInputCommandInteraction
     return;
   }
 
-  const session = await getActiveDraftSession(guild.id);
+  const session = await getPendingDraftSession(guild.id);
+
   if (!session) {
-    await interaction.editReply("No active draft session. Run `/draft init` to start one.");
+    await interaction.editReply("No pending session. Run `/roster create` to start a session.");
     return;
   }
 
-  if (session.teams.some((t) => t.pickOrder === null)) {
-    await interaction.editReply("Draft order not fully set. Use `/draft setorder` to configure it.");
+  const currentPickOrder = getPickOrder(session.id);
+
+  if (!currentPickOrder.isFinal) {
+    await interaction.editReply("Draft order not set. Use `/draft setorder` to configure it.");
     return;
   }
 
-  const captains = session.players.filter((player) => player.isCaptain);
-  const teams = session.teams;
+  const rosterErrors = validateRosterCounts(session.players);
+
+  if (rosterErrors.length > 0) {
+    await interaction.editReply(`Roster validation failed:\n- ${rosterErrors.join("\n- ")}`);
+    return;
+  }
   const createdChannelIds: string[] = [];
-  let draftChannel: TextChannel | VoiceChannel;
-  const teamChannelUpdates: { teamId: number; channelId: string; voiceChannelId: string }[] = [];
 
   try {
-    const category = await guild.channels.create({
-      name: `Draft - ${session.id}`,
-      type: ChannelType.GuildCategory,
-      permissionOverwrites: [
-        { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
-        {
-          id: botMember.id,
-          type: OverwriteType.Member,
-          allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ManageChannels],
-        },
-      ],
-    });
-    createdChannelIds.push(category.id);
+    const numTeams = session.players.filter((player) => player.isCaptain).length;
+    const numPlayersPerTeam = session.players.length / numTeams;
+    const randomTankNames = await getRandomTankNames(numTeams);
 
-    draftChannel = await createDiscordChannel(
-      guild,
-      "draft-channel",
-      ChannelType.GuildText,
-      category.id,
-      captains.map((player) => ({ id: player.discordUserId, type: OverwriteType.Member })),
-      true,
-    );
-    createdChannelIds.push(draftChannel.id);
+    const plannedTeams = currentPickOrder.order.map((captainDiscordId, index) => ({
+      captainDiscordId,
+      name: randomTankNames[index] ?? `Team ${index + 1}`,
+      pickOrder: index,
+    }));
 
-    const captainChannel = await createDiscordChannel(
-      guild,
-      "captains-channel",
-      ChannelType.GuildText,
-      category.id,
-      captains.map((player) => ({ id: player.discordUserId, type: OverwriteType.Member })),
-      true,
-    );
-    createdChannelIds.push(captainChannel.id);
+    let draftChannelId: string;
+    let categoryId: string;
+    let captainsChannelId: string;
+    let teamChannelUpdates: { captainDiscordId: string; textChannelId: string; voiceChannelId: string }[];
 
-    for (const team of teams) {
-      const captain = captains.find((player) => player.discordUserId === team.captainDiscordId);
-      const initialMembers = captain ? [{ id: captain.discordUserId, type: OverwriteType.Member }] : [];
+    try {
+      const result = await createSessionDiscordChannels(guild, session.id, plannedTeams);
+      draftChannelId = result.draftChannelId;
+      categoryId = result.categoryId;
+      captainsChannelId = result.captainsChannelId;
+      teamChannelUpdates = result.teamChannelUpdates;
 
-      const textChannel = await createDiscordChannel(
-        guild,
-        team.name,
-        ChannelType.GuildText,
-        category.id,
-        initialMembers,
-        true,
-      );
-      createdChannelIds.push(textChannel.id);
-
-      const voiceChannel = await createDiscordChannel(
-        guild,
-        team.name,
-        ChannelType.GuildVoice,
-        category.id,
-        initialMembers,
-        true,
-      );
-      createdChannelIds.push(voiceChannel.id);
-
-      teamChannelUpdates.push({ teamId: team.id, channelId: textChannel.id, voiceChannelId: voiceChannel.id });
+      createdChannelIds.push(draftChannelId, categoryId, captainsChannelId);
+      teamChannelUpdates.forEach((update) => {
+        createdChannelIds.push(update.textChannelId, update.voiceChannelId);
+      });
+    } catch {
+      await interaction.editReply("Failed to create draft channels. Please check the bot's permissions and try again.");
+      return;
     }
-  } catch (error) {
-    console.error("Error creating channels:", error);
-    await interaction.editReply(
-      "Failed to create channels for the draft session. Please check the bot's permissions and try again.",
+
+    const channelMap = new Map(teamChannelUpdates.map((update) => [update.captainDiscordId, update]));
+
+    const draftType = interaction.options.getString("draft_type", true) as DraftType;
+
+    const draftChannel = (await guild.channels.fetch(draftChannelId)) as TextChannel;
+    const draftMessage = await draftChannel.send({ content: "Setting up draft..." });
+    await createDraftTeams(
+      session.id,
+      plannedTeams.map((team) => {
+        const channels = channelMap.get(team.captainDiscordId);
+        if (!channels) throw new Error(`Missing channel IDs for captain ${team.captainDiscordId}`);
+        return {
+          name: team.name,
+          captainDiscordId: team.captainDiscordId,
+          pickOrder: team.pickOrder,
+          textChannelId: channels.textChannelId,
+          voiceChannelId: channels.voiceChannelId,
+        };
+      }),
     );
+    const updatedSession = await startDraftSession(
+      session.id,
+      draftChannelId,
+      draftMessage.id,
+      numTeams,
+      numPlayersPerTeam,
+      draftType,
+    );
+    await draftMessage.edit({ content: "", embeds: [buildDraftEmbed(updatedSession)] });
+
+    await interaction.editReply(`Draft started! Check <#${draftChannelId}>.`);
+  } catch {
     for (const channelId of createdChannelIds) {
       try {
-        const channel = await guild.channels.fetch(channelId);
-        if (channel) await channel.delete();
-      } catch (cleanupError) {
-        console.error(`Failed to delete channel ${channelId}:`, cleanupError);
-      }
+        await guild.channels.delete(channelId);
+      } catch {}
     }
-    return;
+
+    await interaction.editReply("An error occurred while starting the draft. Please try again.");
   }
-
-  await updateTeamChannelIds(session.id, teamChannelUpdates);
-
-  const draftMessage = await draftChannel.send({ embeds: [buildDraftEmbed(session)] });
-  await startDraftSession(session.id, draftChannel.id, draftMessage.id);
-
-  await interaction.editReply(`Draft started! Check <#${draftChannel.id}>.`);
 }

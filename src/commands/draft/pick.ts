@@ -50,7 +50,7 @@ export async function executePick(interaction: GuildChatInputCommandInteraction)
   }
 
   await interaction.editReply({
-    content: `Draft **${draftPlayer.discordUsername}** for **${currentTeam.name}**?`,
+    content: `Are you sure you want to pick <@${draftPlayer.discordUserId}>?`,
     embeds: [buildPlayerCard(draftPlayer, null)],
     components: [buildPlayerCardConfirmButton(session.id, draftPlayer)],
   });

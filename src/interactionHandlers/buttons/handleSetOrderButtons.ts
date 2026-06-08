@@ -1,7 +1,7 @@
 import { type ButtonInteraction, MessageFlags } from "discord.js";
 import { buildSetOrderComponents, buildSetOrderContent } from "../../components/buildSetOrderComponents";
-import { getActiveDraftSession, setTeamPickOrders } from "../../db/draftSession";
-import { clearSetOrder, getSetOrder, updateSetOrder } from "../../lib/draft/setOrderState";
+import { getPendingDraftSession } from "../../db/draftSession";
+import { clearPickOrder, finalizePickOrder, getPickOrder } from "../../lib/draft/setOrderState";
 
 function parseSessionId(customId: string): string | null {
   const colonIndex = customId.indexOf(":");
@@ -12,16 +12,16 @@ export async function handleSetOrderConfirm(interaction: ButtonInteraction) {
   const sessionId = parseSessionId(interaction.customId);
   if (!sessionId || !interaction.guildId) return;
 
-  const session = await getActiveDraftSession(interaction.guildId);
+  const session = await getPendingDraftSession(interaction.guildId);
   if (!session || session.id !== sessionId) {
     await interaction.update({ content: "This draft session is no longer active.", components: [] });
     return;
   }
 
   const captains = session.players.filter((player) => player.isCaptain);
-  const currentOrder = getSetOrder(sessionId);
+  const currentOrder = getPickOrder(sessionId);
 
-  if (currentOrder.length !== captains.length) {
+  if (currentOrder.order.length !== captains.length) {
     await interaction.reply({
       content: "Not all captains have been placed. Please complete the order first.",
       flags: MessageFlags.Ephemeral,
@@ -29,23 +29,19 @@ export async function handleSetOrderConfirm(interaction: ButtonInteraction) {
     return;
   }
 
-  await setTeamPickOrders(
-    sessionId,
-    currentOrder.map((captainId, index) => ({ captainId, pickOrder: index })),
-  );
-  clearSetOrder(sessionId);
+  finalizePickOrder(sessionId);
 
-  const orderLines = currentOrder
-    .map((captainId, index) => {
-      const captain = captains.find((captain) => captain.discordUserId === captainId);
-      const team = session.teams.find((team) => team.captainDiscordId === captainId);
+  const orderLines = currentOrder.order
+    .map((captainDiscordId, index) => {
+      const captain = captains.find((captain) => captain.discordUserId === captainDiscordId);
+      const team = session.teams.find((team) => team.captainDiscordId === captainDiscordId);
 
-      return `${index + 1}. ${team ? `**${team.name}** - ` : ""}<@${captainId}>${captain ? ` (${captain.discordUsername})` : ""}`;
+      return `${index + 1}. ${team ? `**${team.name}** - ` : ""}<@${captainDiscordId}>${captain ? ` (${captain.discordUsername})` : ""}`;
     })
     .join("\n");
 
   await interaction.update({
-    content: `**Draft order confirmed!**\n\n${orderLines}\n\nUse \`/draft config\` to finalize draft details.`,
+    content: `**Draft order confirmed.**\n\n${orderLines}\n\nUse \`/draft start\` to finalize draft details and start the draft.`,
     components: [],
   });
 }
@@ -54,17 +50,15 @@ export async function handleSetOrderReset(interaction: ButtonInteraction) {
   const sessionId = parseSessionId(interaction.customId);
   if (!sessionId || !interaction.guildId) return;
 
-  const session = await getActiveDraftSession(interaction.guildId);
+  const session = await getPendingDraftSession(interaction.guildId);
   if (!session || session.id !== sessionId) {
-    await interaction.update({ content: "This draft session is no longer active.", components: [] });
+    await interaction.update({ content: "There is no pending session found.", components: [] });
     return;
   }
 
-  const captains = session.players
-    .filter((player) => player.isCaptain)
-    .map((player) => ({ userId: player.discordUserId, username: player.discordUsername }));
+  const captains = session.players.filter((player) => player.isCaptain);
 
-  updateSetOrder(sessionId, []);
+  clearPickOrder(sessionId);
 
   await interaction.update({
     content: buildSetOrderContent(captains, []),

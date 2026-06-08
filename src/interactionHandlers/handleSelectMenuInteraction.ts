@@ -1,7 +1,7 @@
 import { MessageFlags, type StringSelectMenuInteraction } from "discord.js";
 import { buildSetOrderComponents, buildSetOrderContent } from "../components/buildSetOrderComponents";
-import { getActiveDraftSession } from "../db/draftSession";
-import { getSetOrder, updateSetOrder } from "../lib/draft/setOrderState";
+import { getPendingDraftSession } from "../db/draftSession";
+import { getPickOrder, updatePickOrder } from "../lib/draft/setOrderState";
 
 function parseSessionId(customId: string): string | null {
   const colonIndex = customId.indexOf(":");
@@ -12,24 +12,22 @@ export async function handleSetOrderMenu(interaction: StringSelectMenuInteractio
   const sessionId = parseSessionId(interaction.customId);
   if (!sessionId || !interaction.guildId) return;
 
-  const session = await getActiveDraftSession(interaction.guildId);
+  const session = await getPendingDraftSession(interaction.guildId);
   if (!session || session.id !== sessionId) {
-    await interaction.reply({ content: "This session is no longer active.", flags: MessageFlags.Ephemeral });
+    await interaction.reply({ content: "There is no pending session found.", flags: MessageFlags.Ephemeral });
     return;
   }
 
-  const captains = session.players
-    .filter((p) => p.isCaptain)
-    .map((p) => ({ userId: p.discordUserId, username: p.discordUsername }));
+  const captains = session.players.filter((player) => player.isCaptain);
 
   const [selectedId] = interaction.values;
   if (!selectedId) return;
 
-  const currentOrder = getSetOrder(sessionId);
-  if (currentOrder.includes(selectedId)) return;
+  const currentOrder = getPickOrder(sessionId);
+  if (currentOrder.order.includes(selectedId)) return;
 
-  const newOrder = [...currentOrder, selectedId];
-  updateSetOrder(sessionId, newOrder);
+  const newOrder = [...currentOrder.order, selectedId];
+  updatePickOrder(sessionId, newOrder);
 
   await interaction.update({
     content: buildSetOrderContent(captains, newOrder),

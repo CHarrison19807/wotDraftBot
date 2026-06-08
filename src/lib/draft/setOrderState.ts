@@ -1,16 +1,28 @@
 // In-memory state for the setorder UI flow.
 // Maps sessionId, ordered array of captain Discord user IDs as the admin places them.
 // Cleared when the admin confirms or when the session is cancelled.
-const pendingSetOrders = new Map<string, string[]>();
-
-export function getSetOrder(sessionId: string): string[] {
-  return pendingSetOrders.get(sessionId) ?? [];
+interface PickOrderState {
+  order: string[];
+  isFinal: boolean;
 }
 
-export function updateSetOrder(sessionId: string, order: string[]): void {
-  pendingSetOrders.set(sessionId, order);
+const pendingPickOrders = new Map<string, { order: string[]; isFinal: boolean }>();
+
+export function getPickOrder(sessionId: string): PickOrderState {
+  return pendingPickOrders.get(sessionId) ?? { order: [], isFinal: false };
 }
 
-export function clearSetOrder(sessionId: string): void {
-  pendingSetOrders.delete(sessionId);
+export function updatePickOrder(sessionId: string, order: string[]): void {
+  pendingPickOrders.set(sessionId, { order, isFinal: false });
+}
+
+export function finalizePickOrder(sessionId: string): void {
+  const current = pendingPickOrders.get(sessionId);
+  if (current) {
+    pendingPickOrders.set(sessionId, { order: current.order, isFinal: true });
+  }
+}
+
+export function clearPickOrder(sessionId: string): void {
+  pendingPickOrders.delete(sessionId);
 }

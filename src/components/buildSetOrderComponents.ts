@@ -6,19 +6,15 @@ import {
   StringSelectMenuBuilder,
 } from "discord.js";
 import { INTERACTION_CUSTOM_IDS } from "../constants";
-
-interface CaptainInfo {
-  userId: string;
-  username: string;
-}
+import type { Prisma } from "../generated/prisma/browser";
 
 export function buildSetOrderComponents(
   sessionId: string,
-  allCaptains: CaptainInfo[],
+  allCaptains: Prisma.DraftPlayerModel[],
   currentOrder: string[],
 ): ActionRowBuilder<MessageActionRowComponentBuilder>[] {
   const placed = new Set(currentOrder);
-  const remaining = allCaptains.filter((captain) => !placed.has(captain.userId));
+  const remaining = allCaptains.filter((captain) => !placed.has(captain.discordUserId));
   const rows: ActionRowBuilder<MessageActionRowComponentBuilder>[] = [];
 
   const resetButton = new ButtonBuilder()
@@ -33,12 +29,7 @@ export function buildSetOrderComponents(
 
   // All captains placed - show confirm + reset in one row
   if (remaining.length === 0) {
-    rows.push(
-      new ActionRowBuilder<ButtonBuilder>().addComponents(
-        confirmButton,
-        resetButton,
-      ) as ActionRowBuilder<MessageActionRowComponentBuilder>,
-    );
+    rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(confirmButton, resetButton));
     return rows;
   }
 
@@ -48,48 +39,39 @@ export function buildSetOrderComponents(
     .setPlaceholder(`Select captain for pick slot #${currentOrder.length + 1}`)
     .addOptions(
       remaining.map((captain) => ({
-        label: captain.username,
-        value: captain.userId,
+        label: captain.discordUsername,
+        value: captain.discordUserId,
       })),
     );
 
-  rows.push(
-    new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-      menu,
-    ) as ActionRowBuilder<MessageActionRowComponentBuilder>,
-  );
+  rows.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu));
 
   if (currentOrder.length > 0) {
-    rows.push(
-      new ActionRowBuilder<ButtonBuilder>().addComponents(
-        resetButton,
-      ) as ActionRowBuilder<MessageActionRowComponentBuilder>,
-    );
+    rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(resetButton));
   }
 
   return rows;
 }
 
-export function buildSetOrderContent(allCaptains: CaptainInfo[], currentOrder: string[]): string {
+export function buildSetOrderContent(allCaptains: Prisma.DraftPlayerModel[], currentOrder: string[]): string {
   const placed = new Set(currentOrder);
-  const remaining = allCaptains.filter((captain) => !placed.has(captain.userId));
+  const remaining = allCaptains.filter((captain) => !placed.has(captain.discordUserId));
   const lines: string[] = ["**Set Captain Pick Order**", ""];
 
-  if (currentOrder.length === 0) {
-    lines.push("Select the captain who picks **first**:");
-  } else {
-    lines.push("**Current order:**");
+  if (currentOrder.length > 0) {
+    lines.push("**Current Order:**");
     for (let i = 0; i < currentOrder.length; i++) {
-      const captain = allCaptains.find((captain) => captain.userId === currentOrder[i]);
-      lines.push(`${i + 1}. <@${currentOrder[i]}>${captain ? ` (${captain.username})` : ""}`);
+      const captain = allCaptains.find((captain) => captain.discordUserId === currentOrder[i]);
+      lines.push(`${i + 1}. <@${currentOrder[i]}>${captain ? ` (${captain.discordUsername})` : ""}`);
     }
+  }
 
+  if (remaining.length > 0) {
     lines.push("");
-    if (remaining.length > 0) {
-      lines.push(`Select the captain for pick slot **#${currentOrder.length + 1}**:`);
-    } else {
-      lines.push("All captains placed. Confirm or reset the order.");
-    }
+    lines.push(`Select the captain for pick slot **#${currentOrder.length + 1}**:`);
+  } else {
+    lines.push("");
+    lines.push("All captains placed. Confirm or reset the order.");
   }
 
   return lines.join("\n");

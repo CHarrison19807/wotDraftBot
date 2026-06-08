@@ -1,5 +1,5 @@
 import type { Prisma } from "../generated/prisma/browser";
-import { Status } from "../generated/prisma/client";
+import { type DraftType, Status } from "../generated/prisma/client";
 import { totalDraftPicks } from "../lib/draft/getDraftTurn";
 import { prisma } from "../lib/prisma";
 
@@ -88,18 +88,14 @@ export async function addPlayersToPendingSession(
   });
 }
 
-export async function setTeamPickOrders(sessionId: string, orders: { captainId: string; pickOrder: number }[]) {
-  return prisma.$transaction(
-    orders.map(({ captainId, pickOrder }) =>
-      prisma.draftTeam.updateMany({
-        where: { sessionId, captainId },
-        data: { pickOrder },
-      }),
-    ),
-  );
-}
-
-export async function startDraftSession(sessionId: string, draftChannelId: string, draftMessageId: string) {
+export async function startDraftSession(
+  sessionId: string,
+  draftChannelId: string,
+  draftMessageId: string,
+  numTeams: number,
+  numPlayersPerTeam: number,
+  draftType: DraftType,
+) {
   return prisma.$transaction(async (tx) => {
     const session = await tx.playerDraftSession.findUnique({
       where: { id: sessionId },
@@ -116,7 +112,8 @@ export async function startDraftSession(sessionId: string, draftChannelId: strin
 
     return tx.playerDraftSession.update({
       where: { id: sessionId },
-      data: { draftChannelId, draftMessageId, status: Status.Active },
+      data: { draftChannelId, draftMessageId, status: Status.Active, numTeams, numPlayersPerTeam, draftType },
+      include: { teams: { orderBy: { pickOrder: "asc" } }, players: true },
     });
   });
 }
@@ -149,20 +146,6 @@ export async function recordPick(sessionId: string, playerId: number, teamId: nu
       },
     });
   });
-}
-
-export async function updateTeamChannelIds(
-  sessionId: string,
-  teamChannels: { teamId: number; channelId: string; voiceChannelId: string }[],
-) {
-  return prisma.$transaction(
-    teamChannels.map(({ teamId, channelId, voiceChannelId }) =>
-      prisma.draftTeam.update({
-        where: { id: teamId, sessionId },
-        data: { channelId, voiceChannelId },
-      }),
-    ),
-  );
 }
 
 export async function cancelDraftSession(sessionId: string) {
