@@ -315,9 +315,6 @@ packages:
   '@tsconfig/bun@1.0.10':
     resolution: {integrity: sha512-5AV5YknQjNyoYzZ/8NG0dawqew/wH+x7ANiCfCIn29qo0cdbd1EryvFD1k5NSZWLBMOI/fGqMIaxi58GPIP9Cg==}
 
-  '@types/node@25.9.2':
-    resolution: {integrity: sha512-G05zqtJhcDLb8uslf5EjCxXg9G1KQxiV8OS0R26IC//Eoyitzqe8z37I7cqvnZlrlSfgocQRfSn/AHBZJJFyGw==}
-
   '@types/node@25.9.3':
     resolution: {integrity: sha512-603BddQMv3pUcr4U2dhujk83N2tTDVr/34wII2B6bJy6g+8WD6yUb11jszNs0gdi4PesVWl7ABt8nYMVpnLUcg==}
 
@@ -432,8 +429,8 @@ packages:
   get-port-please@3.2.0:
     resolution: {integrity: sha512-I9QVvBw5U/hw3RmWpYKRumUeaDgxTPd401x364rLmWBJcOQ753eov1eTgzDqRG9bqFIfDc7gfzcQEWrUri3o1A==}
 
-  giget@3.2.0:
-    resolution: {integrity: sha512-GvHTWcykIR/fP8cj8dMpuMMkvaeJfPvYnhq0oW+chSeIr+ldX21ifU2Ms6KBoyKZQZmVaUAAhQ2EZ68KJF8a7A==}
+  giget@3.3.0:
+    resolution: {integrity: sha512-gzi2D96p+AMfDcmJHGDj3KJ9NRiwvlFAU5yfa3ROwWZmFUjX4P43x3BcyRaOMMLto1vUo7C+86+MFhYTl6Ryiw==}
     hasBin: true
 
   graceful-fs@4.2.11:
@@ -445,8 +442,8 @@ packages:
   graphmatch@1.1.1:
     resolution: {integrity: sha512-5ykVn/EXM1hF0XCaWh05VbYvEiOL2lY1kBxZtaYsyvjp7cmWOU1XsAdfQBwClraEofXDT197lFbXOEVMHpvQOg==}
 
-  hono@4.12.23:
-    resolution: {integrity: sha512-eIaZ9qDgu7XV0pxOCrg7/WhnQ6Ivm22UcxhXx/A3dcbqbbYgBEkc6e/J/s7j2tS96zoB0S9VBdLwQNCWwUo4LA==}
+  hono@4.12.25:
+    resolution: {integrity: sha512-2NFaIyNVgJmBs/ecmtGzlmluTFs5cHEWGTdu0t1HBwYzoGXOL5nUQBRMXsXWla5i4KkG//QMzVP88m1+I3fdAQ==}
     engines: {node: '>=16.9.0'}
 
   http-status-codes@2.3.0:
@@ -794,9 +791,9 @@ snapshots:
 
   '@electric-sql/pglite@0.4.1': {}
 
-  '@hono/node-server@1.19.11(hono@4.12.23)':
+  '@hono/node-server@1.19.11(hono@4.12.25)':
     dependencies:
-      hono: 4.12.23
+      hono: 4.12.25
 
   '@kurkle/color@0.3.4': {}
 
@@ -836,13 +833,13 @@ snapshots:
       '@electric-sql/pglite': 0.4.1
       '@electric-sql/pglite-socket': 0.1.1(@electric-sql/pglite@0.4.1)
       '@electric-sql/pglite-tools': 0.3.1(@electric-sql/pglite@0.4.1)
-      '@hono/node-server': 1.19.11(hono@4.12.23)
+      '@hono/node-server': 1.19.11(hono@4.12.25)
       '@prisma/get-platform': 7.2.0
       '@prisma/query-plan-executor': 7.2.0
       '@prisma/streams-local': 0.1.2
       foreground-child: 3.3.1
       get-port-please: 3.2.0
-      hono: 4.12.23
+      hono: 4.12.25
       http-status-codes: 2.3.0
       pathe: 2.0.3
       proper-lockfile: 4.1.2
@@ -968,17 +965,13 @@ snapshots:
 
   '@tsconfig/bun@1.0.10': {}
 
-  '@types/node@25.9.2':
-    dependencies:
-      undici-types: 7.24.6
-
   '@types/node@25.9.3':
     dependencies:
       undici-types: 7.24.6
 
   '@types/pg@8.20.0':
     dependencies:
-      '@types/node': 25.9.2
+      '@types/node': 25.9.3
       pg-protocol: 1.14.0
       pg-types: 2.2.0
 
@@ -988,7 +981,7 @@ snapshots:
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 25.9.2
+      '@types/node': 25.9.3
 
   '@vladfrangu/async_event_emitter@2.4.7': {}
 
@@ -1010,7 +1003,7 @@ snapshots:
       defu: 6.1.7
       dotenv: 17.4.2
       exsolve: 1.0.8
-      giget: 3.2.0
+      giget: 3.3.0
       jiti: 2.7.0
       ohash: 2.0.11
       pathe: 2.0.3
@@ -1099,7 +1092,7 @@ snapshots:
 
   get-port-please@3.2.0: {}
 
-  giget@3.2.0: {}
+  giget@3.3.0: {}
 
   graceful-fs@4.2.11: {}
 
@@ -1107,7 +1100,7 @@ snapshots:
 
   graphmatch@1.1.1: {}
 
-  hono@4.12.23: {}
+  hono@4.12.25: {}
 
   http-status-codes@2.3.0: {}
 
