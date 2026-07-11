@@ -31,7 +31,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "2.5.3",
 		"@tsconfig/bun": "1.0.10",
-		"@types/node": "25.9.4",
+		"@types/node": "25.9.5",
 		"@types/pg": "8.20.0",
 		"typescript": "6.0.3"
 	}
