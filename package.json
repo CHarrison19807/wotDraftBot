@@ -18,7 +18,7 @@
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
-	"packageManager": "pnpm@11.15.1",
+	"packageManager": "pnpm@11.16.0",
 	"dependencies": {
 		"@prisma/adapter-pg": "7.9.0",
 		"@prisma/client": "7.9.0",
