@@ -20,7 +20,7 @@
 	"license": "ISC",
 	"packageManager": "pnpm@12.14.0",
 	"dependencies": {
-		"@prisma/adapter-pg": "7.10.0",
+		"@prisma/adapter-pg": "7.10.1",
 		"@prisma/client": "7.10.0",
 		"csv-parse": "7.0.3",
 		"discord.js": "14.27.0",
