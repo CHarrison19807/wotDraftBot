@@ -24,7 +24,7 @@
 		"@prisma/client": "7.10.1",
 		"csv-parse": "7.0.3",
 		"discord.js": "14.28.1",
-		"dotenv": "18.0.9",
+		"dotenv": "18.0.10",
 		"pg": "8.23.1",
 		"prisma": "7.10.1"
 	},
